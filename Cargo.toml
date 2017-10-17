@@ -1,0 +1,11 @@
+[package]
+name = "mines-rs"
+version = "0.1.0"
+authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
+
+[dependencies]
+generic-array = "0.8.2"
+serde = "1.0.8"
+hyper_serde = "*"
+serde_derive = "1.0.8"
+time = "*"
