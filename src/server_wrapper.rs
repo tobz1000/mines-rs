@@ -7,7 +7,6 @@ extern crate serde_json;
 use std::error::Error;
 use self::tokio_core::reactor;
 use self::futures::{Future, Stream};
-use self::hyper::Uri;
 use self::hyper::Method;
 use self::hyper::client::{Client, HttpConnector, Request};
 use self::hyper::header::{ContentLength, ContentType};
@@ -16,29 +15,19 @@ use self::serde::ser::Serialize;
 use self::json_server_requests::*;
 use self::server_response::ServerResponse;
 
-pub trait MinesServer {
-	fn status(&self) -> &ServerResponse;
-	fn turn(
-		&self,
-		clear:	Vec<Vec<i32>>,
-		flag:	Vec<Vec<i32>>,
-		unflag:	Vec<Vec<i32>>,
-	) -> Result<ServerResponse, Box<Error>>;
-}
-
-pub struct JsonServerWrapper<'a> {
-	base_url: &'a str,
-	client_name: &'a str,
+pub struct JsonServerWrapper {
+	base_url: String,
+	client_name: String,
 	status: ServerResponse,
 	http_client: Client<HttpConnector>,
 }
 
-impl<'a> JsonServerWrapper<'a> {
+impl JsonServerWrapper {
 	pub fn new_game(
 		dims: Vec<i32>,
 		mines: i32,
 		seed: Option<u32>
-	) -> Result<JsonServerWrapper<'a>, Box<Error>> {
+	) -> Result<JsonServerWrapper, Box<Error>> {
 		let client_name = "RustyBoi";
 		let event_loop_core = reactor::Core::new()?;
 		let http_client = Client::new(&event_loop_core.handle());
@@ -57,17 +46,23 @@ impl<'a> JsonServerWrapper<'a> {
 		)?;
 
 		Ok(JsonServerWrapper {
-			base_url,
-			client_name,
+			base_url: base_url.to_owned(),
+			client_name: client_name.to_owned(),
 			status,
 			http_client
 		})
 	}
 
-	fn action<R: JsonServerRequest + Serialize>(&self, request: R) ->
-		Result<ServerResponse, Box<Error>>
+	fn action<R: JsonServerRequest + Serialize>(self, request: R) ->
+		Result<JsonServerWrapper, Box<Error>>
 	{
-		Self::_action(&self.http_client, &self.base_url, &request)
+		let status = Self::_action(
+			&self.http_client,
+			&self.base_url,
+			&request
+		)?;
+
+		Ok(JsonServerWrapper { status, ..self })
 	}
 
 	fn _action<R: JsonServerRequest + Serialize>(
@@ -89,25 +84,25 @@ impl<'a> JsonServerWrapper<'a> {
 
 		Ok(server_resp)
 	}
-}
 
-impl<'a> MinesServer for JsonServerWrapper<'a> {
-	fn turn(
-		&self,
+	pub fn turn(
+		self,
 		clear: Vec<Vec<i32>>,
 		flag: Vec<Vec<i32>>,
 		unflag: Vec<Vec<i32>>
-	) -> Result<ServerResponse, Box<Error>> {
-		self.action(TurnRequest {
-			id: &self.status.id,
-			client: &self.client_name,
+	) -> Result<JsonServerWrapper, Box<Error>> {
+		let req = TurnRequest {
+			id: &self.status.id.clone(),
+			client: &self.client_name.clone(),
 			clear,
 			flag,
 			unflag			
-		})
+		};
+
+		self.action(req)
 	}
 
-	fn status(&self) -> &ServerResponse {
+	pub fn status(&self) -> &ServerResponse {
 		&self.status
 	}
 }

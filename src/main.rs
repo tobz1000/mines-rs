@@ -3,7 +3,7 @@ extern crate serde_derive;
 
 mod server_wrapper;
 
-use server_wrapper::{JsonServerWrapper,MinesServer};
+use server_wrapper::{JsonServerWrapper};
 
 fn main() {
 	let server = JsonServerWrapper::new_game(vec![10, 10], 10, None).unwrap();
