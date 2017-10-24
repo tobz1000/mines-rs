@@ -5,9 +5,8 @@ authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
 
 [dependencies]
 serde = "*"
-hyper_serde = "*"
 serde_derive = "*"
-time = "*"
+chrono = { version = "*", features = ["serde"] }
 hyper = "0.11.6"
 tokio-core = "*"
 futures = "*"

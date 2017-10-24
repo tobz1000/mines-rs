@@ -160,11 +160,9 @@ mod json_server_requests {
 }
 
 mod server_response {
-	extern crate hyper_serde;
-	extern crate time;
+	extern crate chrono;
 
-	use self::hyper_serde::Serde;
-	use self::time::Tm;
+	use self::chrono::{DateTime, Utc};
 
 	#[derive(Serialize, Deserialize)]
 	pub enum CellState { Cleared, Mine }
@@ -191,6 +189,6 @@ mod server_response {
 		pub unflagged: Vec<Vec<i32>>,
 		pub clearActual: Vec<CellInfo>,
 		pub clearReq: Vec<Vec<i32>>,
-		pub turnTakenAt: Serde<Tm>
+		pub turnTakenAt: DateTime<Utc>,
 	}
 }
