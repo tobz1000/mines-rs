@@ -35,17 +35,16 @@ impl<'a> GameGrid<'a> {
 				(acc * dim) + coord
 			}) as usize;
 
-		match self.arr[index] {
-			Some(ref mut cell) => cell,
-			None => {
-				let cell = Cell::new(coords);
-				self.arr[index] = Some(cell);
-				&mut self.arr[index].unwrap()
-			}
+		let mut cell = &mut self.arr[index];
+
+		if *cell == None {
+			*cell = Some(Cell::new(coords));
 		}
+
+		(*cell).as_mut().unwrap()
 	}
 
-	pub fn surr_cells(&'a self, cell: &'a Cell) -> &'a HashSet<&'a mut Cell> {
+	pub fn surr_cells(&'a mut self, cell: &'a Cell) -> &'a HashSet<&'a mut Cell> {
 		match self.surr_cells.get(cell) {
 			Some(surr_cells) => surr_cells,
 			None => {
