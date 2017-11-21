@@ -1,6 +1,9 @@
+#![feature(iterator_step_by)]
+#![feature(range_contains)]
+#![feature(conservative_impl_trait)]
+
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
 extern crate itertools;
 
 extern crate serde_json;
