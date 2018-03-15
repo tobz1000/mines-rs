@@ -25,7 +25,7 @@ pub fn play(
 
     println!("{:?}", server_wrapper.status());
 
-    while !to_clear.is_empty() && !to_flag.is_empty() {
+    while !(to_clear.is_empty() && to_flag.is_empty()) {
         server_wrapper = server_wrapper.turn(
             to_clear,
             to_flag,
