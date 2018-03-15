@@ -1,8 +1,8 @@
 extern crate tokio_core;
 extern crate hyper;
-extern crate futures;
 extern crate serde;
 extern crate serde_json;
+extern crate futures_await as futures;
 
 use std::error::Error;
 use std::io;
@@ -17,17 +17,17 @@ use self::json_server_requests::*;
 use self::server_response::ServerResponse;
 
 pub struct JsonServerWrapper {
+	pub client_name: String,
+	pub status: ServerResponse,
 	base_url: String,
-	client_name: String,
-	status: ServerResponse,
 	http_client: Client<HttpConnector>
 }
 
 impl JsonServerWrapper {
 	pub fn new_game(
-		dims: Vec<i32>,
-		mines: i32,
-		seed: Option<u32>,
+		dims: Vec<usize>,
+		mines: usize,
+		seed: Option<u64>,
 		event_loop_core: &mut reactor::Core
 	) -> Result<JsonServerWrapper, Box<Error>> {
 		let client_name = "RustyBoi";
@@ -97,9 +97,9 @@ impl JsonServerWrapper {
 
 	pub fn turn(
 		self,
-		clear: Vec<Vec<i32>>,
-		flag: Vec<Vec<i32>>,
-		unflag: Vec<Vec<i32>>,
+		clear: Vec<Vec<usize>>,
+		flag: Vec<Vec<usize>>,
+		unflag: Vec<Vec<usize>>,
 		event_loop_core: &mut reactor::Core
 	) -> Result<JsonServerWrapper, Box<Error>> {
 		let req = TurnRequest {
@@ -107,7 +107,7 @@ impl JsonServerWrapper {
 			client: &self.client_name.clone(),
 			clear,
 			flag,
-			unflag			
+			unflag
 		};
 
 		self.action(req, event_loop_core)
@@ -127,9 +127,9 @@ mod json_server_requests {
 	pub struct TurnRequest<'a> {
 		pub id: &'a str,
 		pub client: &'a str,
-		pub clear: Vec<Vec<i32>>,
-		pub flag: Vec<Vec<i32>>,
-		pub unflag: Vec<Vec<i32>>,
+		pub clear: Vec<Vec<usize>>,
+		pub flag: Vec<Vec<usize>>,
+		pub unflag: Vec<Vec<usize>>,
 	}
 
 	impl<'a> JsonServerRequest for TurnRequest<'a> {
@@ -139,9 +139,9 @@ mod json_server_requests {
 	#[derive(Serialize, Deserialize)]
 	pub struct NewGameRequest<'a> {
 		pub client: &'a str,
-		pub seed: Option<u32>,
-		pub dims: Vec<i32>,
-		pub mines: i32,
+		pub seed: Option<u64>,
+		pub dims: Vec<usize>,
+		pub mines: usize,
 		pub autoclear: bool,
 	}
 
@@ -159,36 +159,39 @@ mod json_server_requests {
 	}
 }
 
-mod server_response {
+pub mod server_response {
 	extern crate chrono;
 
 	use self::chrono::{DateTime, Utc};
 
-	#[derive(Serialize, Deserialize)]
-	pub enum CellState { Cleared, Mine }
+	#[derive(Serialize, Deserialize, Clone, Copy)]
+	#[derive(Debug)]
+	pub enum CellState { cleared, mine }
 
 	#[derive(Serialize, Deserialize)]
+	#[derive(Debug)]
 	pub struct CellInfo {
-		surrounding: i32,
-		state: CellState,
-		coords: Vec<i32>
+		pub surrounding: usize,
+		pub state: CellState,
+		pub coords: Vec<usize>
 	}
 
 	#[derive(Serialize, Deserialize)]
 	#[allow(non_snake_case)]
+	#[derive(Debug)]
 	pub struct ServerResponse {
 		pub id: String,
 		pub seed: u64,
-		pub dims: Vec<i32>,
-		pub mines: i32,
+		pub dims: Vec<usize>,
+		pub mines: usize,
 		pub turnNum: i32,
 		pub gameOver: bool,
 		pub win: bool,
 		pub cellsRem: i32,
-		pub flagged: Vec<Vec<i32>>,
-		pub unflagged: Vec<Vec<i32>>,
+		pub flagged: Vec<Vec<usize>>,
+		pub unflagged: Vec<Vec<usize>>,
 		pub clearActual: Vec<CellInfo>,
-		pub clearReq: Vec<Vec<i32>>,
+		pub clearReq: Vec<Vec<usize>>,
 		pub turnTakenAt: DateTime<Utc>,
 	}
 }

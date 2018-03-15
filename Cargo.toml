@@ -11,4 +11,5 @@ hyper = "0.11.6"
 tokio-core = "*"
 futures = "*"
 serde_json = "*"
-itertools = { git = "https://github.com/tobz1000/rust-itertools.git", rev = "multi-product" }
+itertools = "*"
+futures-await = "*"
