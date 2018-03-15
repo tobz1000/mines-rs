@@ -33,10 +33,10 @@ pub fn play(
             event_loop_core
         )?;
 
-        if server_wrapper.status().gameOver { break; }
+        if server_wrapper.status().game_over { break; }
 
         let next_actions = grid.handle_cell_info(
-            server_wrapper.status().clearActual.as_slice()
+            server_wrapper.status().clear_actual.as_slice()
         );
 
         to_clear = next_actions.to_clear;

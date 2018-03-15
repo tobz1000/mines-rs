@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum ClientAction {
     IncSurrEmpty,
     IncSurrMine,
@@ -5,10 +6,10 @@ pub enum ClientAction {
     Flag,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ServerAction { Clear, Flag }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Cell {
     Ongoing {
         total_surr: usize,

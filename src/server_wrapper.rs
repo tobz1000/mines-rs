@@ -6,6 +6,7 @@ extern crate futures_await as futures;
 
 use std::error::Error;
 use std::io;
+use std::str;
 use self::tokio_core::reactor;
 use self::futures::{Future, Stream};
 use self::hyper::Method;
@@ -164,34 +165,33 @@ pub mod server_response {
 
 	use self::chrono::{DateTime, Utc};
 
-	#[derive(Serialize, Deserialize, Clone, Copy)]
-	#[derive(Debug)]
-	pub enum CellState { cleared, mine }
+	#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+	#[serde(rename_all = "camelCase")]
+	pub enum CellState { Cleared, Mine }
 
-	#[derive(Serialize, Deserialize)]
-	#[derive(Debug)]
+	#[derive(Debug, Serialize, Deserialize)]
+	#[serde(rename_all = "camelCase")]
 	pub struct CellInfo {
 		pub surrounding: usize,
 		pub state: CellState,
 		pub coords: Vec<usize>
 	}
 
-	#[derive(Serialize, Deserialize)]
-	#[allow(non_snake_case)]
-	#[derive(Debug)]
+	#[derive(Debug, Serialize, Deserialize)]
+	#[serde(rename_all = "camelCase")]
 	pub struct ServerResponse {
 		pub id: String,
 		pub seed: u64,
 		pub dims: Vec<usize>,
 		pub mines: usize,
-		pub turnNum: i32,
-		pub gameOver: bool,
+		pub turn_num: i32,
+		pub game_over: bool,
 		pub win: bool,
-		pub cellsRem: i32,
+		pub cells_rem: i32,
 		pub flagged: Vec<Vec<usize>>,
 		pub unflagged: Vec<Vec<usize>>,
-		pub clearActual: Vec<CellInfo>,
-		pub clearReq: Vec<Vec<usize>>,
-		pub turnTakenAt: DateTime<Utc>,
+		pub clear_actual: Vec<CellInfo>,
+		pub clear_req: Vec<Vec<usize>>,
+		pub turn_taken_at: DateTime<Utc>,
 	}
 }

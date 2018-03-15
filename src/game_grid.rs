@@ -11,7 +11,7 @@ pub struct ServerActions {
 
 pub struct GameGrid {
 	dims: Vec<usize>,
-    offsets: Vec<usize>,
+    offsets: Vec<isize>,
 	arr: Vec<Option<Cell>>
 }
 
@@ -59,10 +59,10 @@ impl GameGrid {
             state,
             ref coords
         } in cell_info.iter() {
-            let index = self.coords_to_index(coords);
+            let index = coords_to_index(coords, self.dims.as_slice());
             let action = match state {
-                CellState::cleared => ClientAction::Clear(surrounding),
-                CellState::mine => ClientAction::Flag
+                CellState::Cleared => ClientAction::Clear(surrounding),
+                CellState::Mine => ClientAction::Flag
             };
             client_actions.push_back((index, action));
         }
@@ -101,65 +101,56 @@ impl GameGrid {
 
         ServerActions {
             to_clear: server_to_clear.into_iter()
-                .map(|i| self.index_to_coords(i))
+                .map(|i| index_to_coords(i, self.dims.as_slice()))
                 .collect(),
             to_flag: server_to_flag.into_iter()
-                .map(|i| self.index_to_coords(i))
+                .map(|i| index_to_coords(i, self.dims.as_slice()))
                 .collect(),
         }
     }
-
-    fn coords_to_index(&self, coords: &[usize]) -> usize {
-        coords.iter().zip(self.dims.iter())
-            .fold(0, |acc, (&coord, &dim)| {
-                (acc * dim) + coord
-            }) as usize
-    }
-
-    fn index_to_coords(&self, index: usize) -> Vec<usize> {
-        let mut coords: Vec<usize> = self.dims.iter()
-            .rev()
-            .scan(index, |rem, &dim| {
-                let coord = *rem % dim;
-                *rem /= dim;
-                Some(coord)
-            })
-            .collect();
-
-        coords.reverse();
-
-        coords
-    }
 }
 
-fn surr_offsets(dims: &[usize]) -> Vec<usize>{
-    dims.iter()
-        .scan(0, |state, &dim| {
-            *state *= dim;
-            Some(*state)
+fn coords_to_index(coords: &[usize], dims: &[usize]) -> usize {
+    coords.iter().zip(dims.iter())
+        .fold(0, |acc, (&coord, &dim)| {
+            (acc * dim) + coord
         })
-        .map(|acc_dim| vec![
-            -(acc_dim as isize),
-            0,
-            acc_dim as isize
-        ].into_iter())
+}
+
+fn index_to_coords(index: usize, dims: &[usize]) -> Vec<usize> {
+    let mut coords: Vec<usize> = dims.iter()
+        .rev()
+        .scan(index, |rem, &dim| {
+            let coord = *rem % dim;
+            *rem /= dim;
+            Some(coord)
+        })
+        .collect();
+
+    coords.reverse();
+
+    coords
+}
+
+fn surr_offsets(dims: &[usize]) -> Vec<isize>{
+    dims.iter()
+        .scan(1, |state, &dim| {
+            let acc_dim = *state;
+            *state *= dim;
+            Some(acc_dim)
+        })
+        .map(|acc_dim| (-(acc_dim as isize)..=acc_dim as isize).step_by(acc_dim))
         .multi_cartesian_product()
-        .map(|offsets| offsets.into_iter().fold(0, |acc, o| acc + o) as usize)
-        .filter(|&offset| offset == 0)
+        .map(|offsets| offsets.into_iter().sum())
+        .filter(|&offset| offset != 0)
         .collect()
 }
 
-// fn coords_to_index(dims: &[i32], coords: &[i32]) -> usize {
-//     coords.iter().zip(dims.iter())
-//         .fold(0, |acc, (&coord, &dim)| {
-//             (acc * dim) + coord
-//         }) as usize
-// }
+#[test]
+fn test_surr_offsets() {
+    let mut offsets = surr_offsets(&[10, 10]);
+    offsets.sort();
+    let expected = vec![-11, -10, -9, -1, 1, 9, 10, 11];
 
-// fn index_to_coords(dims: &[i32], index: usize) -> Vec<i32> {
-//     dims.iter().rev().scan(index, |rem, &dim| {
-//         let coord = *rem % dim;
-//         *rem /= dim;
-//         coord
-//     }).rev().collect()
-// }
+    assert_eq!(offsets, expected);
+}
