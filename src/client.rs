@@ -23,7 +23,7 @@ pub fn play(
     ];
     let mut to_flag = vec![];
 
-    println!("{:?}", server_wrapper.status);
+    println!("{:?}", server_wrapper.status());
 
     while !to_clear.is_empty() && !to_flag.is_empty() {
         server_wrapper = server_wrapper.turn(
@@ -33,15 +33,15 @@ pub fn play(
             event_loop_core
         )?;
 
-        if server_wrapper.status.gameOver { break; }
+        if server_wrapper.status().gameOver { break; }
 
         let next_actions = grid.handle_cell_info(
-            server_wrapper.status.clearActual.as_slice()
+            server_wrapper.status().clearActual.as_slice()
         );
 
         to_clear = next_actions.to_clear;
         to_flag = next_actions.to_flag;
     }
 
-    Ok(server_wrapper.status.win)
+    Ok(server_wrapper.status().win)
 }

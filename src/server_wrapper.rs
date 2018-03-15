@@ -17,8 +17,8 @@ use self::json_server_requests::*;
 use self::server_response::ServerResponse;
 
 pub struct JsonServerWrapper {
-	pub client_name: String,
-	pub status: ServerResponse,
+	client_name: String,
+	status: ServerResponse,
 	base_url: String,
 	http_client: Client<HttpConnector>
 }
