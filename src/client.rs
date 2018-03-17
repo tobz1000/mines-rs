@@ -34,6 +34,7 @@ pub fn play(
         )?;
 
         if server_wrapper.status().game_over { break; }
+		println!("Turn {}", server_wrapper.status().turn_num);
 
         let next_actions = grid.handle_cell_info(
             server_wrapper.status().clear_actual.as_slice()

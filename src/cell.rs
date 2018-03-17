@@ -1,13 +1,11 @@
-#[derive(Debug)]
-pub enum ClientAction {
+#[derive(Clone, Copy, Debug)]
+pub enum CellAction {
     IncSurrEmpty,
     IncSurrMine,
-    Clear(usize),
+    ClientClear(usize),
+    ServerClear,
     Flag,
 }
-
-#[derive(Clone, Copy, Debug)]
-pub enum ServerAction { Clear, Flag }
 
 #[derive(Clone, Copy, Debug)]
 pub enum Cell {
@@ -32,7 +30,17 @@ impl Cell {
 
     }
 
-    fn try_mark_surrounding(&mut self) -> Option<ServerAction> {
+    pub fn to_submit(&self) -> bool {
+        match self {
+            &Cell::Ongoing {
+                total_surr_mines: None,
+                ..
+            } => true,
+            _ => false
+        }
+    }
+
+    fn try_mark_surrounding(&mut self) -> Option<CellAction> {
         match self {
             &mut Cell::Ongoing {
                 total_surr,
@@ -42,10 +50,10 @@ impl Cell {
             } => {
                 if known_surr_mines == total_surr_mines {
                     *self = Cell::Clear;
-                    Some(ServerAction::Clear)
+                    Some(CellAction::ServerClear)
                 } else if known_surr_empty == total_surr - total_surr_mines {
                     *self = Cell::Clear;
-                    Some(ServerAction::Flag)
+                    Some(CellAction::Flag)
                 } else { None }
             },
             _ => None
@@ -56,11 +64,11 @@ impl Cell {
         match *self {
             Cell::Ongoing { .. } => { *self = Cell::Mine; },
             Cell::Mine => (),
-            _ => panic!("Tried to flag previously-cleared cell")
+            Cell::Clear => panic!("Tried to flag previously-cleared cell")
         }
     }
 
-    pub fn set_clear(&mut self, surr_mine_count: usize) -> Option<ServerAction> {
+    pub fn set_clear(&mut self, surr_mine_count: usize) -> Option<CellAction> {
         match *self {
             Cell::Ongoing {
                 total_surr_mines: ref mut total_surr_mines @ None,
@@ -76,7 +84,7 @@ impl Cell {
         self.try_mark_surrounding()
     }
 
-    pub fn inc_surr_empty(&mut self) -> Option<ServerAction> {
+    pub fn inc_surr_empty(&mut self) -> Option<CellAction> {
         if let &mut Cell::Ongoing { ref mut known_surr_empty, .. } = self {
             *known_surr_empty += 1;
         }
@@ -84,7 +92,7 @@ impl Cell {
         self.try_mark_surrounding()
     }
 
-    pub fn inc_surr_mine(&mut self) -> Option<ServerAction> {
+    pub fn inc_surr_mine(&mut self) -> Option<CellAction> {
         if let &mut Cell::Ongoing { ref mut known_surr_mines, .. } = self {
             *known_surr_mines += 1;
         }

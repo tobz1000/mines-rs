@@ -1,9 +1,10 @@
 use itertools::Itertools;
 
-use cell::{Cell, ClientAction, ServerAction};
+use cell::{Cell, CellAction};
 use server_wrapper::server_response::{CellInfo, CellState};
 use std::collections::{VecDeque, HashSet};
 
+#[derive(Debug)]
 pub struct ServerActions {
     pub to_clear: Vec<Vec<usize>>,
     pub to_flag: Vec<Vec<usize>>
@@ -11,7 +12,7 @@ pub struct ServerActions {
 
 pub struct GameGrid {
 	dims: Vec<usize>,
-    offsets: Vec<isize>,
+    offsets: HashSet<isize>,
 	arr: Vec<Option<Cell>>
 }
 
@@ -61,40 +62,67 @@ impl GameGrid {
         } in cell_info.iter() {
             let index = coords_to_index(coords, self.dims.as_slice());
             let action = match state {
-                CellState::Cleared => ClientAction::Clear(surrounding),
-                CellState::Mine => ClientAction::Flag
+                CellState::Cleared => CellAction::ClientClear(surrounding),
+                CellState::Mine => CellAction::Flag
             };
             client_actions.push_back((index, action));
         }
 
-        while let Some((index, action)) = client_actions.pop_front() {
+        while let Some((index, client_action)) = client_actions.pop_front() {
             let surr_indices = self.surr_indices(index);
             let cell = self.get_cell(index);
 
-            if let Some(server_action) = match action {
-                ClientAction::Clear(surr_mine_count) => {
+            if index == 150 {
+                println!("(10, 0) {:?}", client_action);
+            }
+            if let Some(surr_action) = match client_action {
+                CellAction::IncSurrEmpty => cell.inc_surr_empty(),
+                CellAction::IncSurrMine => cell.inc_surr_mine(),
+                CellAction::ClientClear(surr_mine_count) => {
                     for &surr in surr_indices.iter() {
-                        client_actions.push_back((surr, ClientAction::IncSurrEmpty));
+                        if surr == 150 {
+                            println!(
+                                "push (10, 0) {:?} from {:?}",
+                                CellAction::IncSurrEmpty,
+                                index_to_coords(index, &[15, 15])
+                            );
+                        }
+                        client_actions.push_back(
+                            (surr, CellAction::IncSurrEmpty)
+                        );
                     }
 
                     cell.set_clear(surr_mine_count)
                 },
-                ClientAction::Flag => {
-                    for &surr in surr_indices.iter() {
-                        client_actions.push_back((surr, ClientAction::IncSurrMine));
+                CellAction::ServerClear => {
+                    if cell.to_submit() {
+                        server_to_clear.insert(index);
                     }
 
-                    cell.set_mine();
+                    None
+                }
+                CellAction::Flag => {
+                    if cell.to_submit() {
+                        server_to_flag.insert(index);
+
+                        for &surr in surr_indices.iter() {
+                            client_actions.push_back(
+                                (surr, CellAction::IncSurrMine)
+                            );
+                        }
+
+                        cell.set_mine();
+                    }
+
                     None
                 },
-                ClientAction::IncSurrEmpty => cell.inc_surr_empty(),
-                ClientAction::IncSurrMine => cell.inc_surr_mine(),
             } {
-                for &surr in surr_indices.iter() {
-                    match server_action {
-                        ServerAction::Clear => { server_to_clear.insert(surr); },
-                        ServerAction::Flag => { server_to_flag.insert(surr); },
-                    }
+                if index == 150 {
+                    println!("(10, 0) {:?} (surr)", surr_action);
+                }
+
+                for &surr_index in surr_indices.iter() {
+                    client_actions.push_back((surr_index, surr_action));
                 }
             }
         }
@@ -132,7 +160,7 @@ fn index_to_coords(index: usize, dims: &[usize]) -> Vec<usize> {
     coords
 }
 
-fn surr_offsets(dims: &[usize]) -> Vec<isize>{
+fn surr_offsets(dims: &[usize]) -> HashSet<isize>{
     dims.iter()
         .scan(1, |state, &dim| {
             let acc_dim = *state;
@@ -148,9 +176,27 @@ fn surr_offsets(dims: &[usize]) -> Vec<isize>{
 
 #[test]
 fn test_surr_offsets() {
-    let mut offsets = surr_offsets(&[10, 10]);
-    offsets.sort();
-    let expected = vec![-11, -10, -9, -1, 1, 9, 10, 11];
+    for (dims, expected) in vec![
+        (vec![1, 1], vec![-2, -1, 1, 2]),
+        (vec![3, 3], vec![-4, -3, -2, -1, 1, 2, 3, 4]),
+        (vec![10, 10], vec![-11, -10, -9, -1, 1, 9, 10, 11]),
+        (vec![2, 2, 2], vec![-7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7]),
+        (vec![4, 5, 6], vec![-25, -24, -23, -21, -20, -19, -17, -16, -15, -5, -4, -3, -1, 1, 3, 4, 5, 15, 16, 17, 19, 20, 21, 23, 24, 25]),
+    ] {
+        let exp_set: HashSet<isize> = expected.iter().map(|&i| i).collect();
+        let actual = surr_offsets(&dims);
 
-    assert_eq!(offsets, expected);
+        let assert_msg = {
+            let mut actual_vec: Vec<isize> = actual.iter().map(|&i| i).collect();
+            actual_vec.sort();
+            format!(
+                "surr_offsets(&{:?}) ->\nexp:   {:?}\nactual:{:?}",
+                dims,
+                expected,
+                actual_vec
+            )
+        };
+
+        assert_eq!(exp_set, actual, "\n\n{}\n\n", assert_msg);
+    }
 }
