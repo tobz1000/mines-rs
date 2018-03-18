@@ -13,54 +13,31 @@ pub struct ServerActions {
 pub struct GameGrid {
 	dims: Vec<usize>,
     offsets: HashSet<isize>,
-	arr: Vec<Option<Cell>>
+	cells: Vec<Option<Cell>>,
 }
 
 impl GameGrid {
 	pub fn new(dims: Vec<usize>) -> Self {
 		let arr_size = dims.iter().fold(1, |a, b| a * b) as usize;
 		let offsets = surr_offsets(dims.as_slice());
+		let cells = vec![None; arr_size];
 
-		let arr = vec![None; arr_size];
-
-		GameGrid { dims, offsets, arr }
+		GameGrid { dims, offsets, cells }
 	}
 
-    fn get_cell(&mut self, index: usize) -> &mut Cell {
-        let surr_count = self.surr_indices(index).len();
-        let cell = &mut self.arr[index];
-
-        if let &mut None = cell {
-            *cell = Some(Cell::new(surr_count));
-        }
-
-        cell.as_mut().unwrap()
-    }
-
-    fn surr_indices(&mut self, index: usize) -> Vec<usize> {
-        self.offsets.iter()
-            .filter_map(|&offset| {
-                let surr_index = index as isize + offset as isize;
-                if (0..self.arr.len() as isize).contains(surr_index) {
-                    Some(surr_index as usize)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    pub fn handle_cell_info(&mut self, cell_info: &[CellInfo]) -> ServerActions {
+    pub fn next_turn(self, cell_info: &[CellInfo]) -> (Self, ServerActions) {
         let mut client_actions = VecDeque::new();
         let mut server_to_clear = HashSet::new();
         let mut server_to_flag = HashSet::new();
+
+        let GameGrid { dims, offsets, mut cells } = self;
 
         for &CellInfo {
             surrounding,
             state,
             ref coords
         } in cell_info.iter() {
-            let index = coords_to_index(coords, self.dims.as_slice());
+            let index = coords_to_index(coords, dims.as_slice());
             let action = match state {
                 CellState::Cleared => CellAction::ClientClear(surrounding),
                 CellState::Mine => CellAction::Flag
@@ -69,8 +46,8 @@ impl GameGrid {
         }
 
         while let Some((index, client_action)) = client_actions.pop_front() {
-            let surr_indices = self.surr_indices(index);
-            let cell = self.get_cell(index);
+            let surr_indices = surr_indices(&cells, &offsets, index);
+            let cell = get_cell(&mut cells, &offsets, index);
 
             if index == 150 {
                 println!("(10, 0) {:?}", client_action);
@@ -127,15 +104,50 @@ impl GameGrid {
             }
         }
 
-        ServerActions {
+        let next_actions = ServerActions {
             to_clear: server_to_clear.into_iter()
-                .map(|i| index_to_coords(i, self.dims.as_slice()))
+                .map(|i| index_to_coords(i, dims.as_slice()))
                 .collect(),
             to_flag: server_to_flag.into_iter()
-                .map(|i| index_to_coords(i, self.dims.as_slice()))
+                .map(|i| index_to_coords(i, dims.as_slice()))
                 .collect(),
-        }
+        };
+        let game_grid = GameGrid { dims, offsets, cells };
+
+        (game_grid, next_actions)
     }
+}
+
+fn get_cell<'a>(
+    cells: &'a mut[Option<Cell>], 
+    offsets: &HashSet<isize>,
+    index: usize
+) -> &'a mut Cell {
+    let surr_count = surr_indices(cells, offsets, index).len();
+    let cell = &mut cells[index];
+
+    if let &mut None = cell {
+        *cell = Some(Cell::new(surr_count));
+    }
+
+    cell.as_mut().unwrap()
+}
+
+fn surr_indices(
+    cells: &[Option<Cell>], 
+    offsets: &HashSet<isize>,
+    index: usize
+) -> Vec<usize> {
+    offsets.iter()
+        .filter_map(|&offset| {
+            let surr_index = index as isize + offset as isize;
+            if (0..cells.len() as isize).contains(surr_index) {
+                Some(surr_index as usize)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn coords_to_index(coords: &[usize], dims: &[usize]) -> usize {

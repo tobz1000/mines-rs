@@ -36,10 +36,11 @@ pub fn play(
         if server_wrapper.status().game_over { break; }
 		println!("Turn {}", server_wrapper.status().turn_num);
 
-        let next_actions = grid.handle_cell_info(
+        let (grid_, next_actions) = grid.next_turn(
             server_wrapper.status().clear_actual.as_slice()
         );
 
+        grid = grid_;
         to_clear = next_actions.to_clear;
         to_flag = next_actions.to_flag;
     }
