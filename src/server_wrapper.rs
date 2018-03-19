@@ -7,6 +7,7 @@ extern crate futures_await as futures;
 use std::error::Error;
 use std::io;
 use std::str;
+use game_grid::Coords;
 use self::tokio_core::reactor;
 use self::futures::{Future, Stream};
 use self::hyper::Method;
@@ -26,7 +27,7 @@ pub struct JsonServerWrapper {
 
 impl JsonServerWrapper {
 	pub fn new_game(
-		dims: Vec<usize>,
+		dims: Coords,
 		mines: usize,
 		seed: Option<u64>,
 		event_loop_core: &mut reactor::Core
@@ -98,9 +99,9 @@ impl JsonServerWrapper {
 
 	pub fn turn(
 		self,
-		clear: Vec<Vec<usize>>,
-		flag: Vec<Vec<usize>>,
-		unflag: Vec<Vec<usize>>,
+		clear: Vec<Coords>,
+		flag: Vec<Coords>,
+		unflag: Vec<Coords>,
 		event_loop_core: &mut reactor::Core
 	) -> Result<JsonServerWrapper, Box<Error>> {
 		let req = TurnRequest {
@@ -120,6 +121,8 @@ impl JsonServerWrapper {
 }
 
 mod json_server_requests {
+	use game_grid::Coords;
+
 	pub trait JsonServerRequest {
 		const ACTION: &'static str;
 	}
@@ -128,9 +131,9 @@ mod json_server_requests {
 	pub struct TurnRequest<'a> {
 		pub id: &'a str,
 		pub client: &'a str,
-		pub clear: Vec<Vec<usize>>,
-		pub flag: Vec<Vec<usize>>,
-		pub unflag: Vec<Vec<usize>>,
+		pub clear: Vec<Coords>,
+		pub flag: Vec<Coords>,
+		pub unflag: Vec<Coords>,
 	}
 
 	impl<'a> JsonServerRequest for TurnRequest<'a> {
@@ -141,7 +144,7 @@ mod json_server_requests {
 	pub struct NewGameRequest<'a> {
 		pub client: &'a str,
 		pub seed: Option<u64>,
-		pub dims: Vec<usize>,
+		pub dims: Coords,
 		pub mines: usize,
 		pub autoclear: bool,
 	}
@@ -164,6 +167,7 @@ pub mod server_response {
 	extern crate chrono;
 
 	use self::chrono::{DateTime, Utc};
+	use game_grid::Coords;
 
 	#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 	#[serde(rename_all = "camelCase")]
@@ -174,7 +178,7 @@ pub mod server_response {
 	pub struct CellInfo {
 		pub surrounding: usize,
 		pub state: CellState,
-		pub coords: Vec<usize>
+		pub coords: Coords
 	}
 
 	#[derive(Debug, Serialize, Deserialize)]
@@ -182,16 +186,16 @@ pub mod server_response {
 	pub struct ServerResponse {
 		pub id: String,
 		pub seed: u64,
-		pub dims: Vec<usize>,
+		pub dims: Coords,
 		pub mines: usize,
 		pub turn_num: i32,
 		pub game_over: bool,
 		pub win: bool,
 		pub cells_rem: i32,
-		pub flagged: Vec<Vec<usize>>,
-		pub unflagged: Vec<Vec<usize>>,
+		pub flagged: Vec<Coords>,
+		pub unflagged: Vec<Coords>,
 		pub clear_actual: Vec<CellInfo>,
-		pub clear_req: Vec<Vec<usize>>,
+		pub clear_req: Vec<Coords>,
 		pub turn_taken_at: DateTime<Utc>,
 	}
 }

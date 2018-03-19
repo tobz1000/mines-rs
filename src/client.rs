@@ -2,11 +2,11 @@ extern crate tokio_core;
 
 use std::error::Error;
 use server_wrapper::JsonServerWrapper;
-use game_grid::GameGrid;
+use game_grid::{GameGrid, Coords};
 use self::tokio_core::reactor;
 
 pub fn play(
-    dims: Vec<usize>,
+    dims: Coords,
     mines: usize,
     seed: Option<u64>,
     event_loop_core: &mut reactor::Core
@@ -18,7 +18,7 @@ pub fn play(
         event_loop_core
     )?;
     let mut grid = GameGrid::new(dims.clone());
-    let mut to_clear: Vec<Vec<usize>> = vec![
+    let mut to_clear: Vec<Coords> = vec![
         dims.iter().map(|d| d / 2).collect()
     ];
     let mut to_flag = vec![];

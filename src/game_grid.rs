@@ -6,19 +6,21 @@ use std::convert::TryInto;
 use cell::{Cell, CellAction};
 use server_wrapper::server_response::{CellInfo, CellState};
 
+pub type Coords = Vec<usize>;
+
 #[derive(Debug)]
 pub struct ServerActions {
-    pub to_clear: Vec<Vec<usize>>,
-    pub to_flag: Vec<Vec<usize>>
+    pub to_clear: Vec<Coords>,
+    pub to_flag: Vec<Coords>
 }
 
 pub struct GameGrid {
-    dims: Vec<usize>,
+    dims: Coords,
     cells: Vec<(Cell, Vec<usize>)>,
 }
 
 impl GameGrid {
-    pub fn new(dims: Vec<usize>) -> Self {
+    pub fn new(dims: Coords) -> Self {
         let all_coords = dims.iter().map(|&d| 0..d).multi_cartesian_product();
 
         let cells = all_coords.map(|coords| {
@@ -107,12 +109,12 @@ impl GameGrid {
     }
 }
 
-fn surr_indices(coords: &[usize], dims: &[usize]) -> Vec<usize> {
+fn surr_indices(coords: &Coords, dims: &Coords) -> Vec<usize> {
     let offsets = repeat(-1..=1).take(dims.len())
         .multi_cartesian_product()
         .filter(|offset| offset.iter().any(|&c| c != 0));
 
-    let surr_coords = offsets.filter_map(|offset| -> Option<Vec<usize>> {
+    let surr_coords = offsets.filter_map(|offset| -> Option<Coords> {
         let mut surr = vec![];
 
         for ((o, &c), &d) in offset.into_iter()
@@ -130,13 +132,13 @@ fn surr_indices(coords: &[usize], dims: &[usize]) -> Vec<usize> {
     surr_coords.map(|s| coords_to_index(&s, dims)).collect()
 }
 
-fn coords_to_index(coords: &[usize], dims: &[usize]) -> usize {
+fn coords_to_index(coords: &Coords, dims: &Coords) -> usize {
     coords.iter().zip(dims.iter())
         .fold(0, |acc, (&coord, &dim)| (acc * dim) + coord)
 }
 
-fn index_to_coords(index: usize, dims: &[usize]) -> Vec<usize> {
-    let mut coords: Vec<usize> = dims.iter()
+fn index_to_coords(index: usize, dims: &Coords) -> Coords {
+    let mut coords: Coords = dims.iter()
         .rev()
         .scan(index, |rem, &dim| {
             let coord = *rem % dim;
