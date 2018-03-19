@@ -30,7 +30,7 @@ fn main_try() -> Result<(), Box<Error>> {
 	let win = client::play(
 		vec![25, 25],
 		100,
-		None,
+		Some(819339871),
 		&mut event_loop_core
 	)?;
 

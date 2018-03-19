@@ -159,6 +159,8 @@ fn test_surr_indices() {
         (vec![5, 9], vec![10, 10], vec![48, 49, 58, 68, 69]),
         (vec![9, 5], vec![10, 10], vec![84, 85, 86, 94, 96]),
         (vec![9, 0], vec![10, 10], vec![80, 81, 91]),
+        (vec![0, 0], vec![1, 1], vec![]),
+        (vec![1, 0], vec![2, 2], vec![0, 1, 3])
     ] {
         assert_eq!(surr_indices(&coords, &dims), exp);
     }

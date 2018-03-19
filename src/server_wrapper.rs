@@ -43,7 +43,7 @@ impl JsonServerWrapper {
 				seed,
 				dims,
 				mines,
-				autoclear: false
+				autoclear: true
 			},
 			&http_client,
 			event_loop_core,
