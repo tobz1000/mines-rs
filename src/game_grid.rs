@@ -30,7 +30,7 @@ impl GameGrid {
     }
 
     pub fn next_turn(self, cell_info: &[CellInfo]) -> (Self, ServerActions) {
-        let mut client_actions = VecDeque::new();
+        let mut actions = VecDeque::new();
         let mut server_to_clear = HashSet::new();
         let mut server_to_flag = HashSet::new();
 
@@ -46,10 +46,10 @@ impl GameGrid {
                 CellState::Cleared => CellAction::ClientClear(surrounding),
                 CellState::Mine => CellAction::Flag
             };
-            client_actions.push_back((index, action));
+            actions.push_back((index, action));
         }
 
-        while let Some((index, client_action)) = client_actions.pop_front() {
+        while let Some((index, client_action)) = actions.pop_front() {
             let (ref mut cell, ref surr_indices) = cells[index];
 
             if let Some(surr_action) = match client_action {
@@ -57,7 +57,7 @@ impl GameGrid {
                 CellAction::IncSurrMine => cell.inc_surr_mine(),
                 CellAction::ClientClear(surr_mine_count) => {
                     for &surr in surr_indices.iter() {
-                        client_actions.push_back(
+                        actions.push_back(
                             (surr, CellAction::IncSurrEmpty)
                         );
                     }
@@ -76,7 +76,7 @@ impl GameGrid {
                         server_to_flag.insert(index);
 
                         for &surr in surr_indices.iter() {
-                            client_actions.push_back(
+                            actions.push_back(
                                 (surr, CellAction::IncSurrMine)
                             );
                         }
@@ -88,7 +88,7 @@ impl GameGrid {
                 },
             } {
                 for &surr_index in surr_indices.iter() {
-                    client_actions.push_back((surr_index, surr_action));
+                    actions.push_back((surr_index, surr_action));
                 }
             }
         }

@@ -27,7 +27,6 @@ impl Cell {
             known_surr_empty: 0,
             known_surr_mines: 0
         }
-
     }
 
     pub fn to_submit(&self) -> bool {

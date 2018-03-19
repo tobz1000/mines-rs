@@ -26,6 +26,10 @@ pub fn play(
     println!("{:?}", server_wrapper.status());
 
     while !(to_clear.is_empty() && to_flag.is_empty()) {
+        println!("Turn {}", server_wrapper.status().turn_num);
+        println!("to_clear {:?}", to_clear);
+        println!("to_flag {:?}", to_flag);
+
         server_wrapper = server_wrapper.turn(
             to_clear,
             to_flag,
@@ -34,7 +38,6 @@ pub fn play(
         )?;
 
         if server_wrapper.status().game_over { break; }
-		println!("Turn {}", server_wrapper.status().turn_num);
 
         let (grid_, next_actions) = grid.next_turn(
             &server_wrapper.status().clear_actual
