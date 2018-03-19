@@ -2,8 +2,8 @@
 #![feature(inclusive_range_syntax)]
 #![feature(range_contains)]
 #![feature(conservative_impl_trait)]
+#![feature(try_from)]
 
-// futures-await features
 #![feature(proc_macro, conservative_impl_trait, generators)]
 
 #[macro_use]

@@ -1,8 +1,10 @@
 use itertools::Itertools;
 
+use std::collections::{VecDeque, HashSet};
+use std::iter::repeat;
+use std::convert::TryInto;
 use cell::{Cell, CellAction};
 use server_wrapper::server_response::{CellInfo, CellState};
-use std::collections::{VecDeque, HashSet};
 
 #[derive(Debug)]
 pub struct ServerActions {
@@ -11,33 +13,35 @@ pub struct ServerActions {
 }
 
 pub struct GameGrid {
-	dims: Vec<usize>,
-    offsets: HashSet<isize>,
-	cells: Vec<Option<Cell>>,
+    dims: Vec<usize>,
+    cells: Vec<(Cell, Vec<usize>)>,
 }
 
 impl GameGrid {
-	pub fn new(dims: Vec<usize>) -> Self {
-		let arr_size = dims.iter().fold(1, |a, b| a * b) as usize;
-		let offsets = surr_offsets(dims.as_slice());
-		let cells = vec![None; arr_size];
+    pub fn new(dims: Vec<usize>) -> Self {
+        let all_coords = dims.iter().map(|&d| 0..d).multi_cartesian_product();
 
-		GameGrid { dims, offsets, cells }
-	}
+        let cells = all_coords.map(|coords| {
+            let surr_indices = surr_indices(&coords, &dims);
+            (Cell::new(surr_indices.len()), surr_indices)
+        }).collect();
+
+        GameGrid { dims, cells }
+    }
 
     pub fn next_turn(self, cell_info: &[CellInfo]) -> (Self, ServerActions) {
         let mut client_actions = VecDeque::new();
         let mut server_to_clear = HashSet::new();
         let mut server_to_flag = HashSet::new();
 
-        let GameGrid { dims, offsets, mut cells } = self;
+        let GameGrid { dims, mut cells } = self;
 
         for &CellInfo {
             surrounding,
             state,
             ref coords
         } in cell_info.iter() {
-            let index = coords_to_index(coords, dims.as_slice());
+            let index = coords_to_index(coords, &dims);
             let action = match state {
                 CellState::Cleared => CellAction::ClientClear(surrounding),
                 CellState::Mine => CellAction::Flag
@@ -46,8 +50,7 @@ impl GameGrid {
         }
 
         while let Some((index, client_action)) = client_actions.pop_front() {
-            let surr_indices = surr_indices(&cells, &offsets, index);
-            let cell = get_cell(&mut cells, &offsets, index);
+            let (ref mut cell, ref surr_indices) = cells[index];
 
             if index == 150 {
                 println!("(10, 0) {:?}", client_action);
@@ -106,55 +109,44 @@ impl GameGrid {
 
         let next_actions = ServerActions {
             to_clear: server_to_clear.into_iter()
-                .map(|i| index_to_coords(i, dims.as_slice()))
+                .map(|i| index_to_coords(i, &dims))
                 .collect(),
             to_flag: server_to_flag.into_iter()
-                .map(|i| index_to_coords(i, dims.as_slice()))
+                .map(|i| index_to_coords(i, &dims))
                 .collect(),
         };
-        let game_grid = GameGrid { dims, offsets, cells };
+        let game_grid = GameGrid { dims, cells };
 
         (game_grid, next_actions)
     }
 }
 
-fn get_cell<'a>(
-    cells: &'a mut[Option<Cell>], 
-    offsets: &HashSet<isize>,
-    index: usize
-) -> &'a mut Cell {
-    let surr_count = surr_indices(cells, offsets, index).len();
-    let cell = &mut cells[index];
+fn surr_indices(coords: &[usize], dims: &[usize]) -> Vec<usize> {
+    let offsets = repeat(-1..=1).take(dims.len())
+        .multi_cartesian_product()
+        .filter(|offset| offset.iter().any(|&c| c != 0));
 
-    if let &mut None = cell {
-        *cell = Some(Cell::new(surr_count));
-    }
+    let surr_coords = offsets.filter_map(|offset| -> Option<Vec<usize>> {
+        let mut surr = vec![];
 
-    cell.as_mut().unwrap()
-}
+        for ((o, &c), &d) in offset.into_iter()
+            .zip(coords.iter())
+            .zip(dims.iter())
+        {
+            let s = (o + (c as isize)).try_into().ok()?;
+            if s >= d { return None; }
+            surr.push(s);
+        }
 
-fn surr_indices(
-    cells: &[Option<Cell>], 
-    offsets: &HashSet<isize>,
-    index: usize
-) -> Vec<usize> {
-    offsets.iter()
-        .filter_map(|&offset| {
-            let surr_index = index as isize + offset as isize;
-            if (0..cells.len() as isize).contains(surr_index) {
-                Some(surr_index as usize)
-            } else {
-                None
-            }
-        })
-        .collect()
+        Some(surr)
+    });
+
+    surr_coords.map(|s| coords_to_index(&s, dims)).collect()
 }
 
 fn coords_to_index(coords: &[usize], dims: &[usize]) -> usize {
     coords.iter().zip(dims.iter())
-        .fold(0, |acc, (&coord, &dim)| {
-            (acc * dim) + coord
-        })
+        .fold(0, |acc, (&coord, &dim)| (acc * dim) + coord)
 }
 
 fn index_to_coords(index: usize, dims: &[usize]) -> Vec<usize> {
@@ -172,43 +164,14 @@ fn index_to_coords(index: usize, dims: &[usize]) -> Vec<usize> {
     coords
 }
 
-fn surr_offsets(dims: &[usize]) -> HashSet<isize>{
-    dims.iter()
-        .scan(1, |state, &dim| {
-            let acc_dim = *state;
-            *state *= dim;
-            Some(acc_dim)
-        })
-        .map(|acc_dim| (-(acc_dim as isize)..=acc_dim as isize).step_by(acc_dim))
-        .multi_cartesian_product()
-        .map(|offsets| offsets.into_iter().sum())
-        .filter(|&offset| offset != 0)
-        .collect()
-}
-
 #[test]
-fn test_surr_offsets() {
-    for (dims, expected) in vec![
-        (vec![1, 1], vec![-2, -1, 1, 2]),
-        (vec![3, 3], vec![-4, -3, -2, -1, 1, 2, 3, 4]),
-        (vec![10, 10], vec![-11, -10, -9, -1, 1, 9, 10, 11]),
-        (vec![2, 2, 2], vec![-7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7]),
-        (vec![4, 5, 6], vec![-25, -24, -23, -21, -20, -19, -17, -16, -15, -5, -4, -3, -1, 1, 3, 4, 5, 15, 16, 17, 19, 20, 21, 23, 24, 25]),
+fn test_surr_indices() {
+    for (coords, dims, exp) in vec![
+        (vec![5, 5], vec![10, 10], vec![44, 45, 46, 54, 56, 64, 65, 66]),
+        (vec![5, 9], vec![10, 10], vec![48, 49, 58, 68, 69]),
+        (vec![9, 5], vec![10, 10], vec![84, 85, 86, 94, 96]),
+        (vec![9, 0], vec![10, 10], vec![80, 81, 91]),
     ] {
-        let exp_set: HashSet<isize> = expected.iter().map(|&i| i).collect();
-        let actual = surr_offsets(&dims);
-
-        let assert_msg = {
-            let mut actual_vec: Vec<isize> = actual.iter().map(|&i| i).collect();
-            actual_vec.sort();
-            format!(
-                "surr_offsets(&{:?}) ->\nexp:   {:?}\nactual:{:?}",
-                dims,
-                expected,
-                actual_vec
-            )
-        };
-
-        assert_eq!(exp_set, actual, "\n\n{}\n\n", assert_msg);
+        assert_eq!(surr_indices(&coords, &dims), exp);
     }
 }

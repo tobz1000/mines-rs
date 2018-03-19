@@ -37,7 +37,7 @@ pub fn play(
 		println!("Turn {}", server_wrapper.status().turn_num);
 
         let (grid_, next_actions) = grid.next_turn(
-            server_wrapper.status().clear_actual.as_slice()
+            &server_wrapper.status().clear_actual
         );
 
         grid = grid_;
