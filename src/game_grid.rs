@@ -52,21 +52,11 @@ impl GameGrid {
         while let Some((index, client_action)) = client_actions.pop_front() {
             let (ref mut cell, ref surr_indices) = cells[index];
 
-            if index == 150 {
-                println!("(10, 0) {:?}", client_action);
-            }
             if let Some(surr_action) = match client_action {
                 CellAction::IncSurrEmpty => cell.inc_surr_empty(),
                 CellAction::IncSurrMine => cell.inc_surr_mine(),
                 CellAction::ClientClear(surr_mine_count) => {
                     for &surr in surr_indices.iter() {
-                        if surr == 150 {
-                            println!(
-                                "push (10, 0) {:?} from {:?}",
-                                CellAction::IncSurrEmpty,
-                                index_to_coords(index, &[15, 15])
-                            );
-                        }
                         client_actions.push_back(
                             (surr, CellAction::IncSurrEmpty)
                         );
@@ -97,10 +87,6 @@ impl GameGrid {
                     None
                 },
             } {
-                if index == 150 {
-                    println!("(10, 0) {:?} (surr)", surr_action);
-                }
-
                 for &surr_index in surr_indices.iter() {
                     client_actions.push_back((surr_index, surr_action));
                 }
