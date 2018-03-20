@@ -9,13 +9,15 @@ pub fn play(
     dims: Coords,
     mines: usize,
     seed: Option<u64>,
+    autoclear: bool,
     event_loop_core: &mut reactor::Core
 ) -> Result<bool, Box<Error>> {
     let mut server_wrapper = JsonServerWrapper::new_game(
         dims.clone(),
         mines,
         seed,
-        event_loop_core
+        autoclear,
+        event_loop_core,
     )?;
     let mut grid = GameGrid::new(dims.clone());
     let mut to_clear: Vec<Coords> = vec![

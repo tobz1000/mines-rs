@@ -30,6 +30,7 @@ impl JsonServerWrapper {
 		dims: Coords,
 		mines: usize,
 		seed: Option<u64>,
+		autoclear: bool,
 		event_loop_core: &mut reactor::Core
 	) -> Result<JsonServerWrapper, Box<Error>> {
 		let client_name = "RustyBoi";
@@ -43,7 +44,7 @@ impl JsonServerWrapper {
 				seed,
 				dims,
 				mines,
-				autoclear: true
+				autoclear,
 			},
 			&http_client,
 			event_loop_core,

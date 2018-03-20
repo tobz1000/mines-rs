@@ -31,6 +31,7 @@ fn main_try() -> Result<(), Box<Error>> {
 		vec![25, 25],
 		100,
 		Some(819339871),
+		true,
 		&mut event_loop_core
 	)?;
 
