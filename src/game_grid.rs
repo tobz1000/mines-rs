@@ -53,7 +53,7 @@ impl GameGrid {
         }
 
         while let Some(CellAction { index, action_type }) = actions.pull() {
-            cells[index].apply_action(action_type, &mut actions);
+            cells[index].apply_action(&mut actions, action_type);
         }
 
         let next_actions = ServerActions {
