@@ -12,7 +12,6 @@ pub struct CellAction {
 pub enum CellActionType {
     MarkSurrEmpty { surr: usize },
     MarkSurrMine { surr: usize },
-    TryComplete,
     ClientClear { mines: usize },
     ServerClear,
     Flag,
@@ -73,38 +72,32 @@ impl OngoingCell {
         use self::CellActionType::*;
 
         match action {
-            MarkSurrEmpty { surr } => { self.mark_surr_empty(actions, surr); },
-            MarkSurrMine { surr } => { self.mark_surr_mine(actions, surr); },
-            TryComplete => { return self.try_complete(actions); },
-            ClientClear { mines } => { self.client_clear(actions, mines); },
-            ServerClear => { self.server_clear(actions); },
+            MarkSurrEmpty { surr } => self.mark_surr_empty(actions, surr),
+            MarkSurrMine { surr } => self.mark_surr_mine(actions, surr),
+            ClientClear { mines } => self.client_clear(actions, mines),
+            ServerClear => {
+                self.server_clear(actions);
+                false
+            },
             Flag => {
                 self.flag(actions);
                 return true;
             }
         }
-
-        false
     }
 
-    fn mark_surr_empty(&mut self, actions: &mut ActionQueue, surr: usize) {
+    fn mark_surr_empty(&mut self, actions: &mut ActionQueue, surr: usize) -> bool {
         self.unknown_surr.remove(&surr);
         self.known_surr_empty += 1;
 
-        actions.push(CellAction {
-            index: self.index,
-            action_type: CellActionType::TryComplete
-        });
+        self.try_complete(actions)
     }
 
-    fn mark_surr_mine(&mut self, actions: &mut ActionQueue, surr: usize) {
+    fn mark_surr_mine(&mut self, actions: &mut ActionQueue, surr: usize) -> bool {
         self.unknown_surr.remove(&surr);
         self.known_surr_mines += 1;
 
-        actions.push(CellAction {
-            index: self.index,
-            action_type: CellActionType::TryComplete
-        });
+        self.try_complete(actions)
     }
 
     fn try_complete(&mut self, actions: &mut ActionQueue) -> bool {
@@ -132,7 +125,7 @@ impl OngoingCell {
         false
     }
 
-    fn client_clear(&mut self, actions: &mut ActionQueue, mines: usize) {
+    fn client_clear(&mut self, actions: &mut ActionQueue, mines: usize) -> bool {
         self.total_surr_mines = Some(mines);
 
         for &surr in self.total_surr.iter() {
@@ -144,10 +137,7 @@ impl OngoingCell {
             })
         }
 
-        actions.push(CellAction {
-            index: self.index,
-            action_type: CellActionType::TryComplete
-        });
+        self.try_complete(actions)
     }
 
     fn server_clear(&mut self, actions: &mut ActionQueue) {
