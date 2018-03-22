@@ -1,4 +1,5 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
+use action_queue::ActionQueue;
 
 
 #[derive(Debug)]
@@ -36,9 +37,7 @@ impl Cell {
     pub fn apply_action(
         &mut self,
         action: CellActionType,
-        actions: &mut VecDeque<CellAction>,
-        server_to_clear: &mut HashSet<usize>,
-        server_to_flag: &mut HashSet<usize>,
+        actions: &mut ActionQueue,
     ) {
         let mut complete = false;
 
@@ -60,7 +59,7 @@ impl Cell {
                     ongoing.total_surr_mines = Some(mines);
 
                     for &surr in ongoing.total_surr.iter() {
-                        actions.push_back(CellAction {
+                        actions.push(CellAction {
                             index: surr,
                             action_type: CellActionType::MarkSurrEmpty {
                                 surr: ongoing.index
@@ -72,16 +71,16 @@ impl Cell {
                 },
                 CellActionType::ServerClear => {
                     if ongoing.total_surr_mines == None {
-                        server_to_clear.insert(ongoing.index);
+                        actions.add_to_clear(ongoing.index);
                     }
 
                     None
                 },
                 CellActionType::Flag => {
-                    server_to_flag.insert(ongoing.index);
+                    actions.add_to_flag(ongoing.index);
 
                     for &surr in ongoing.total_surr.iter() {
-                        actions.push_back(CellAction {
+                        actions.push(CellAction {
                             index: surr,
                             action_type: CellActionType::MarkSurrMine {
                                 surr: ongoing.index
@@ -95,7 +94,7 @@ impl Cell {
                 }
             } {
                 for &surr in ongoing.unknown_surr.iter() {
-                    actions.push_back(CellAction { index: surr, action_type });
+                    actions.push(CellAction { index: surr, action_type });
                 }
 
                 complete = true;

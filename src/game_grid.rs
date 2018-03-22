@@ -1,10 +1,11 @@
 use itertools::Itertools;
 
-use std::collections::{VecDeque, HashSet};
+use std::collections::HashSet;
 use std::iter::repeat;
 use std::convert::TryInto;
 use cell::{Cell, CellAction, CellActionType};
 use server_wrapper::server_response::{CellInfo, CellState};
+use action_queue::ActionQueue;
 
 pub type Coords = Vec<usize>;
 
@@ -31,9 +32,7 @@ impl GameGrid {
     }
 
     pub fn next_turn(self, cell_info: &[CellInfo]) -> (Self, ServerActions) {
-        let mut actions = VecDeque::new();
-        let mut server_to_clear = HashSet::new();
-        let mut server_to_flag = HashSet::new();
+        let mut actions = ActionQueue::new();
 
         let GameGrid { dims, mut cells } = self;
 
@@ -50,24 +49,19 @@ impl GameGrid {
                 CellState::Mine => CellActionType::Flag
             };
 
-            actions.push_back(CellAction { index, action_type });
+            actions.push(CellAction { index, action_type });
         }
 
-        while let Some(CellAction { index, action_type }) = actions.pop_front() {
-            cells[index].apply_action(
-                action_type,
-                &mut actions,
-                &mut server_to_clear,
-                &mut server_to_flag
-            );
+        while let Some(CellAction { index, action_type }) = actions.pull() {
+            cells[index].apply_action(action_type, &mut actions);
         }
 
         let next_actions = ServerActions {
-            to_clear: server_to_clear.into_iter()
-                .map(|i| index_to_coords(i, &dims))
+            to_clear: actions.get_to_clear()
+                .map(|&i| index_to_coords(i, &dims))
                 .collect(),
-            to_flag: server_to_flag.into_iter()
-                .map(|i| index_to_coords(i, &dims))
+            to_flag: actions.get_to_flag()
+                .map(|&i| index_to_coords(i, &dims))
                 .collect(),
         };
         let game_grid = GameGrid { dims, cells };

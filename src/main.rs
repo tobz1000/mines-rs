@@ -17,6 +17,7 @@ mod server_wrapper;
 mod game_grid;
 mod cell;
 mod client;
+mod action_queue;
 
 use self::tokio_core::reactor;
 use std::error::Error;
