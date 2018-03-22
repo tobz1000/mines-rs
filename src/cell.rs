@@ -12,6 +12,7 @@ pub struct CellAction {
 pub enum CellActionType {
     MarkSurrEmpty { surr: usize },
     MarkSurrMine { surr: usize },
+    TryComplete,
     ClientClear { mines: usize },
     ServerClear,
     Flag,
@@ -42,18 +43,54 @@ impl Cell {
         let mut complete = false;
 
         if let &mut Cell::Ongoing(ref mut ongoing) = self {
-            if let Some(action_type) = match action {
+            match action {
                 CellActionType::MarkSurrEmpty { surr } => {
                     ongoing.unknown_surr.remove(&surr);
                     ongoing.known_surr_empty += 1;
 
-                    ongoing.try_complete()
+                    actions.push(CellAction {
+                        index: ongoing.index,
+                        action_type: CellActionType::TryComplete
+                    });
                 },
                 CellActionType::MarkSurrMine { surr } => {
                     ongoing.unknown_surr.remove(&surr);
                     ongoing.known_surr_mines += 1;
 
-                    ongoing.try_complete()
+                    actions.push(CellAction {
+                        index: ongoing.index,
+                        action_type: CellActionType::TryComplete
+                    });
+                },
+                CellActionType::TryComplete => {
+                    if let &mut OngoingCell {
+                        total_surr_mines: Some(total_surr_mines),
+                        known_surr_mines,
+                        ref unknown_surr,
+                        ..
+                    } = ongoing {
+                        let unknown_mines = total_surr_mines - known_surr_mines;
+
+                        if unknown_mines == 0 {
+                            for &surr in ongoing.unknown_surr.iter() {
+                                actions.push(CellAction {
+                                    index: surr,
+                                    action_type: CellActionType::ServerClear
+                                });
+                            }
+
+                            complete = true;
+                        } else if unknown_mines == unknown_surr.len() {
+                            for &surr in ongoing.unknown_surr.iter() {
+                                actions.push(CellAction {
+                                    index: surr,
+                                    action_type: CellActionType::Flag
+                                });
+                            }
+
+                            complete = true;
+                        }
+                    }
                 },
                 CellActionType::ClientClear { mines } => {
                     ongoing.total_surr_mines = Some(mines);
@@ -67,14 +104,15 @@ impl Cell {
                         })
                     }
 
-                    ongoing.try_complete()
+                    actions.push(CellAction {
+                        index: ongoing.index,
+                        action_type: CellActionType::TryComplete
+                    });
                 },
                 CellActionType::ServerClear => {
                     if ongoing.total_surr_mines == None {
                         actions.add_to_clear(ongoing.index);
                     }
-
-                    None
                 },
                 CellActionType::Flag => {
                     actions.add_to_flag(ongoing.index);
@@ -89,15 +127,7 @@ impl Cell {
                     }
 
                     complete = true;
-
-                    None
                 }
-            } {
-                for &surr in ongoing.unknown_surr.iter() {
-                    actions.push(CellAction { index: surr, action_type });
-                }
-
-                complete = true;
             }
         }
 
@@ -115,19 +145,5 @@ impl Cell {
             known_surr_mines: 0,
             known_surr_empty: 0,
         })
-    }
-}
-
-impl OngoingCell {
-    fn try_complete(&self) -> Option<CellActionType> {
-        if let Some(total_surr_mines) = self.total_surr_mines {
-            let unknown_mines = total_surr_mines - self.known_surr_mines;
-
-            if unknown_mines == 0 {
-                Some(CellActionType::ServerClear)
-            } else if unknown_mines == self.unknown_surr.len() {
-                Some(CellActionType::Flag)
-            } else { None }
-        } else { None }
     }
 }
