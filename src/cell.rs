@@ -156,31 +156,29 @@ impl OngoingCell {
     }
 
     fn try_complete(&mut self, actions: &mut ActionQueue) -> bool {
-        if let Some(unknown_mines) = self.unknown_surr_mines() {
-            let single_action = if unknown_mines == 0 {
-                Some(SingleCellAction::ServerClear)
-            } else if unknown_mines == self.unknown_surr.len() {
-                Some(SingleCellAction::Flag)
-            } else { None };
+        use self::SingleCellAction::*;
 
-            if let Some(action_type) = single_action {
-                for &surr in self.unknown_surr.iter() {
-                    actions.push(Action::Single { index: surr, action_type });
-                }
-
-                return true;
-            } else {
-                for &surr in self.total_surr.iter() {
-                    actions.push(Action::Pair {
-                        index1: self.index,
-                        index2: surr,
-                        action_type: CellPairAction::CompareSurr
-                    });
-                }
+        if let Some(action_type) = match self.unknown_surr_mines() {
+            Some(0) => Some(ServerClear),
+            Some(s) if s == self.unknown_surr.len() => Some(Flag),
+            _ => None
+        } {
+            for &surr in self.unknown_surr.iter() {
+                actions.push(Action::Single { index: surr, action_type });
             }
-        }
 
-        false
+            return true;
+        } else {
+            for &surr in self.total_surr.iter() {
+                actions.push(Action::Pair {
+                    index1: self.index,
+                    index2: surr,
+                    action_type: CellPairAction::CompareSurr
+                });
+            }
+
+            return false;
+        }
     }
 
     fn compare_surr(
