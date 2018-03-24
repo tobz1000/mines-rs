@@ -3,7 +3,7 @@ use itertools::Itertools;
 use std::collections::HashSet;
 use std::iter::repeat;
 use std::convert::TryInto;
-use cell::{Cell, CellAction, CellActionType};
+use cell::{Cell, Action, SingleCellAction};
 use server_wrapper::server_response::{CellInfo, CellState};
 use action_queue::ActionQueue;
 
@@ -43,17 +43,45 @@ impl GameGrid {
         } in cell_info.iter() {
             let index = coords_to_index(coords, &dims);
             let action_type = match state {
-                CellState::Cleared => CellActionType::ClientClear {
+                CellState::Cleared => SingleCellAction::ClientClear {
                     mines: surrounding
                 },
-                CellState::Mine => CellActionType::Flag
+                CellState::Mine => SingleCellAction::Flag
             };
 
-            actions.push(CellAction { index, action_type });
+            actions.push(Action::Single { index, action_type });
         }
 
-        while let Some(CellAction { index, action_type }) = actions.pull() {
-            cells[index].apply_action(&mut actions, action_type);
+        while let Some(action) = actions.pull() {
+            match action {
+                Action::Single { index, action_type } => {
+                    let cell = &mut cells[index];
+                    let mut complete = false;
+
+                    if let &mut Cell::Ongoing(ref mut ongoing) = cell {
+                        complete = ongoing.apply_action(&mut actions, action_type);
+                    }
+
+                    if complete {
+                        *cell = Cell::Complete;
+                    }
+                },
+                Action::Pair { index1, index2, action_type } => {
+                    match index_pair(&mut cells, index1, index2) {
+                        (
+                            &mut Cell::Ongoing(ref mut cell1),
+                            &mut Cell::Ongoing(ref mut cell2)
+                        ) => {
+                            cell1.apply_pair_action(
+                                cell2,
+                                &mut actions,
+                                action_type
+                            );
+                        },
+                        _ => ()
+                    }
+                }
+            }
         }
 
         let next_actions = ServerActions {
@@ -111,6 +139,27 @@ fn index_to_coords(index: usize, dims: &Coords) -> Coords {
     coords.reverse();
 
     coords
+}
+
+fn index_pair<T>(slice: &mut [T], ia: usize, ib: usize) -> (&mut T, &mut T) {
+    if ia == ib || ia > slice.len() || ib > slice.len() {
+        panic!(
+            "Invalid index pair ({}, {}); slice.len() == {}",
+            ia,
+            ib,
+            slice.len()
+        );
+    }
+
+    let a;
+    let b;
+
+    unsafe {
+        a = &mut *(slice.get_unchecked_mut(ia) as *mut _);
+        b = &mut *(slice.get_unchecked_mut(ib) as *mut _);
+    }
+
+    (a, b)
 }
 
 #[test]

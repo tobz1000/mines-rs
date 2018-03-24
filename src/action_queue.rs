@@ -1,8 +1,8 @@
 use std::collections::{VecDeque, HashSet};
-use cell::CellAction;
+use cell::Action;
 
 pub struct ActionQueue {
-    actions: VecDeque<CellAction>,
+    actions: VecDeque<Action>,
     server_to_clear: HashSet<usize>,
     server_to_flag: HashSet<usize>
 }
@@ -16,11 +16,11 @@ impl ActionQueue {
         }
     }
 
-    pub fn push(&mut self, action: CellAction) {
+    pub fn push(&mut self, action: Action) {
         self.actions.push_back(action);
     }
 
-    pub fn pull(&mut self) -> Option<CellAction> {
+    pub fn pull(&mut self) -> Option<Action> {
         self.actions.pop_front()
     }
 
