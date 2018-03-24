@@ -49,24 +49,8 @@ pub struct OngoingCell {
 }
 
 impl OngoingCell {
-    fn total_surr_empty(&self) -> Option<usize> {
-        Some(self.total_surr.len() - self.total_surr_mines?)
-    }
-
-    fn known_surr(&self) -> usize {
-        self.total_surr.len() - self.unknown_surr.len()
-    }
-
-    fn known_surr_empty(&self) -> usize {
-        self.known_surr() - self.known_surr_mines
-    }
-
     fn unknown_surr_mines(&self) -> Option<usize> {
         Some(self.total_surr_mines? - self.known_surr_mines)
-    }
-
-    fn unknown_surr_empty(&self) -> Option<usize> {
-        Some(self.total_surr_empty()? - self.known_surr_empty())
     }
 
     // Returns true if cell is Complete as a result of action.
