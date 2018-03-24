@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::cmp::{max, min};
 use action_queue::ActionQueue;
 
-
+#[derive(Clone, Copy, Debug)]
 pub enum Action {
     Single { index: usize, action_type: SingleCellAction },
     Pair { index1: usize, index2: usize, action_type: CellPairAction }
@@ -17,6 +17,7 @@ pub enum SingleCellAction {
     Flag,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum CellPairAction {
     CompareSurr
 }
@@ -187,24 +188,28 @@ impl OngoingCell {
                 .map(|&i| i)
                 .collect();
 
-            let (self_count, mid_count, other_count) = solve_linear_constraints(
+            if let Some((
+                self_count,
+                mid_count,
+                other_count
+            )) = solve_linear_constraints(
                 (self_excl.len(), common.len(), other_excl.len()),
                 (self_unknown_mines, other_unknown_mines)
-            );
+            ) {
+                for &(count, ref set) in [
+                    (self_count, self_excl),
+                    (mid_count, common),
+                    (other_count, other_excl)
+                ].into_iter() {
+                    let action_type = match count {
+                        0 => SingleCellAction::ServerClear,
+                        c if c == set.len() => SingleCellAction::Flag,
+                        _ => { continue; }
+                    };
 
-            for &(count, ref set) in [
-                (self_count, self_excl),
-                (mid_count, common),
-                (other_count, other_excl)
-            ].into_iter() {
-                let action_type = match count {
-                    Some(0) => SingleCellAction::ServerClear,
-                    Some(c) if c == set.len() => SingleCellAction::Flag,
-                    _ => { continue; }
-                };
-
-                for &index in set.iter() {
-                    actions.push(Action::Single { index, action_type });
+                    for &index in set.iter() {
+                        actions.push(Action::Single { index, action_type });
+                    }
                 }
             }
         }
@@ -214,7 +219,7 @@ impl OngoingCell {
 fn solve_linear_constraints(
     (x_max, y_max, z_max): (usize, usize, usize),
     (x_add_y, y_add_z): (usize, usize)
-) -> (Option<usize>, Option<usize>, Option<usize>) {
+) -> Option<(usize, usize, usize)> {
     let x_max = min(x_max, x_add_y);
     let y_max = min(min(y_max, x_add_y), y_add_z);
     let z_max = min(z_max, y_add_z);
@@ -223,9 +228,25 @@ fn solve_linear_constraints(
     let y_min = max(max(0, x_add_y - x_max), y_add_z - z_max);
     let z_min = max(0, y_add_z - y_max);
 
-    (
-        if x_max == x_min { Some(x_max) } else { None },
-        if y_max == y_min { Some(y_max) } else { None },
-        if z_max == z_min { Some(z_max) } else { None },
-    )
+    match (x_max - x_min, y_max - y_min, z_max - z_min) {
+        (0, _, _) => {
+            let x = x_max;
+            let y = x_add_y - x;
+            let z = y_add_z - y;
+            Some((x, y, z))
+        },
+        (_, 0, _) => {
+            let y = y_max;
+            let x = x_add_y - y;
+            let z = y_add_z - y;
+            Some((x, y, z))
+        },
+        (_, _, 0) => {
+            let z = z_max;
+            let y = y_add_z - z;
+            let x = x_add_y - y;
+            Some((x, y, z))
+        },
+        _ => None
+    }
 }

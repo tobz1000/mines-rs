@@ -30,8 +30,8 @@ fn main_try() -> Result<(), Box<Error>> {
 	let mut event_loop_core = reactor::Core::new()?;
 	let win = client::play(
 		vec![25, 25],
-		100,
-		Some(819339871),
+		150,
+		Some(109746378),
 		true,
 		&mut event_loop_core
 	)?;
