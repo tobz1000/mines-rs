@@ -77,7 +77,7 @@ impl OngoingCell {
             }
             ServerClear => {
                 self.server_clear(actions);
-                false
+                self.try_complete(actions)
             },
             Flag => {
                 self.flag(actions);
@@ -124,6 +124,17 @@ impl OngoingCell {
     fn server_clear(&mut self, actions: &mut ActionQueue) {
         if self.total_surr_mines == None {
             actions.add_to_clear(self.index);
+        }
+
+        // Not necessary to mark as empty at this point, but allows for
+        // some more eager clearing/flagging on the current turn
+        for &surr in self.total_surr.iter() {
+            actions.push(Action::Single {
+                index: surr,
+                action_type: SingleCellAction::MarkSurrEmpty {
+                    surr: self.index
+                }
+            })
         }
     }
 
