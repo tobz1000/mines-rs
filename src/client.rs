@@ -2,6 +2,7 @@ extern crate tokio_core;
 
 use std::error::Error;
 use server::json_server_wrapper::JsonServerWrapper;
+use server::GameServer;
 use game_grid::{GameGrid, Coords};
 use self::tokio_core::reactor;
 
@@ -32,12 +33,7 @@ pub fn play(
         println!("to_clear {:?}", to_clear);
         println!("to_flag {:?}", to_flag);
 
-        server_wrapper.turn(
-            to_clear,
-            to_flag,
-            vec![],
-            event_loop_core
-        )?;
+        server_wrapper.turn(to_clear, to_flag, vec![])?;
 
         if server_wrapper.status().game_over { break; }
 

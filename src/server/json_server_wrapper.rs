@@ -8,6 +8,7 @@ use std::error::Error;
 use std::io;
 use std::str;
 use game_grid::Coords;
+use server::GameServer;
 use self::tokio_core::reactor;
 use self::futures::{Future, Stream};
 use self::hyper::Method;
@@ -18,21 +19,22 @@ use self::serde::ser::Serialize;
 use self::json_server_requests::*;
 use self::server_response::ServerResponse;
 
-pub struct JsonServerWrapper {
+pub struct JsonServerWrapper<'a> {
 	client_name: String,
 	status: ServerResponse,
 	base_url: String,
-	http_client: Client<HttpConnector>
+	http_client: Client<HttpConnector>,
+	event_loop_core: &'a mut reactor::Core
 }
 
-impl JsonServerWrapper {
+impl<'a> JsonServerWrapper<'a> {
 	pub fn new_game(
 		dims: Coords,
 		mines: usize,
 		seed: Option<u64>,
 		autoclear: bool,
-		event_loop_core: &mut reactor::Core
-	) -> Result<JsonServerWrapper, Box<Error>> {
+		event_loop_core: &'a mut reactor::Core
+	) -> Result<JsonServerWrapper<'a>, Box<Error>> {
 		let client_name = "RustyBoi";
 		let http_client = Client::new(&event_loop_core.handle());
 		let base_url = "http://localhost:1066/server";
@@ -54,20 +56,20 @@ impl JsonServerWrapper {
 			base_url: base_url.to_owned(),
 			client_name: client_name.to_owned(),
 			status,
-			http_client
+			http_client,
+			event_loop_core
 		})
 	}
 
 	fn action<R: JsonServerRequest + Serialize>(
 		&mut self,
 		request: R,
-		event_loop_core: &mut reactor::Core,
 	) -> Result<(), Box<Error>> {
 		self.status = Self::_action(
 			&self.base_url,
 			&request,
 			&self.http_client,
-			event_loop_core,
+			self.event_loop_core,
 		)?;
 
 		Ok(())
@@ -98,12 +100,11 @@ impl JsonServerWrapper {
 		Ok(event_loop_core.run(server_resp_fut)?)
 	}
 
-	pub fn turn(
+	fn turn(
 		&mut self,
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
-		unflag: Vec<Coords>,
-		event_loop_core: &mut reactor::Core
+		unflag: Vec<Coords>
 	) -> Result<(), Box<Error>> {
 		let req = TurnRequest {
 			id: &self.status.id.clone(),
@@ -113,10 +114,21 @@ impl JsonServerWrapper {
 			unflag
 		};
 
-		self.action(req, event_loop_core)
+		self.action(req)
+	}
+}
+
+impl<'a> GameServer for JsonServerWrapper<'a> {
+	fn turn(
+		&mut self,
+		clear: Vec<Coords>,
+		flag: Vec<Coords>,
+		unflag: Vec<Coords>,
+	) -> Result<(), Box<Error>> {
+		self.turn(clear, flag, unflag)
 	}
 
-	pub fn status(&self) -> &ServerResponse {
+	fn status(&self) -> &ServerResponse {
 		&self.status
 	}
 }
