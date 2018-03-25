@@ -59,18 +59,18 @@ impl JsonServerWrapper {
 	}
 
 	fn action<R: JsonServerRequest + Serialize>(
-		self,
+		&mut self,
 		request: R,
 		event_loop_core: &mut reactor::Core,
-	) -> Result<JsonServerWrapper, Box<Error>> {
-		let status = Self::_action(
+	) -> Result<(), Box<Error>> {
+		self.status = Self::_action(
 			&self.base_url,
 			&request,
 			&self.http_client,
 			event_loop_core,
 		)?;
 
-		Ok(JsonServerWrapper { status, ..self })
+		Ok(())
 	}
 
 	fn _action<R: JsonServerRequest + Serialize>(
@@ -99,12 +99,12 @@ impl JsonServerWrapper {
 	}
 
 	pub fn turn(
-		self,
+		&mut self,
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
 		unflag: Vec<Coords>,
 		event_loop_core: &mut reactor::Core
-	) -> Result<JsonServerWrapper, Box<Error>> {
+	) -> Result<(), Box<Error>> {
 		let req = TurnRequest {
 			id: &self.status.id.clone(),
 			client: &self.client_name.clone(),

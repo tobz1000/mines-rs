@@ -32,7 +32,7 @@ pub fn play(
         println!("to_clear {:?}", to_clear);
         println!("to_flag {:?}", to_flag);
 
-        server_wrapper = server_wrapper.turn(
+        server_wrapper.turn(
             to_clear,
             to_flag,
             vec![],
