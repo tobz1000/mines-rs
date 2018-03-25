@@ -13,7 +13,7 @@ extern crate itertools;
 extern crate serde_json;
 extern crate tokio_core;
 
-mod server_wrapper;
+mod server;
 mod game_grid;
 mod cell;
 mod client;

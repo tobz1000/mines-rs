@@ -1,7 +1,7 @@
 extern crate tokio_core;
 
 use std::error::Error;
-use server_wrapper::JsonServerWrapper;
+use server::json_server_wrapper::JsonServerWrapper;
 use game_grid::{GameGrid, Coords};
 use self::tokio_core::reactor;
 

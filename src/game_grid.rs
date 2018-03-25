@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::iter::repeat;
 use std::convert::TryInto;
 use cell::{Cell, Action, SingleCellAction};
-use server_wrapper::server_response::{CellInfo, CellState};
+use server::json_server_wrapper::server_response::{CellInfo, CellState};
 use action_queue::ActionQueue;
 
 pub type Coords = Vec<usize>;
