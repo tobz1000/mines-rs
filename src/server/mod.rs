@@ -1,7 +1,7 @@
 pub mod json_server_wrapper;
 
 use std::error::Error;
-use game_grid::Coords;
+use coords::Coords;
 use self::json_server_wrapper::server_response::ServerResponse;
 
 pub trait GameServer {

@@ -3,7 +3,8 @@ extern crate tokio_core;
 use std::error::Error;
 use server::json_server_wrapper::JsonServerWrapper;
 use server::GameServer;
-use game_grid::{GameGrid, Coords};
+use game_grid::GameGrid;
+use coords::Coords;
 use self::tokio_core::reactor;
 
 pub fn play(

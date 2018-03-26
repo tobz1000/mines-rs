@@ -7,7 +7,7 @@ extern crate futures_await as futures;
 use std::error::Error;
 use std::io;
 use std::str;
-use game_grid::Coords;
+use coords::Coords;
 use server::GameServer;
 use self::tokio_core::reactor;
 use self::futures::{Future, Stream};
@@ -134,7 +134,7 @@ impl<'a> GameServer for JsonServerWrapper<'a> {
 }
 
 mod json_server_requests {
-	use game_grid::Coords;
+	use coords::Coords;
 
 	pub trait JsonServerRequest {
 		const ACTION: &'static str;
@@ -180,7 +180,7 @@ pub mod server_response {
 	extern crate chrono;
 
 	use self::chrono::{DateTime, Utc};
-	use game_grid::Coords;
+	use coords::Coords;
 
 	#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 	#[serde(rename_all = "camelCase")]

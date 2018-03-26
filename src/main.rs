@@ -14,6 +14,7 @@ extern crate serde_json;
 extern crate tokio_core;
 
 mod server;
+mod coords;
 mod game_grid;
 mod cell;
 mod client;
