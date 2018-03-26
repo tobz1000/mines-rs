@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use coords::{Coords, coords_to_index, index_to_coords, surr_indices};
+use coords::Coords;
 use cell::{Cell, Action, SingleCellAction};
 use server::json_server_wrapper::server_response::{CellInfo, CellState};
 use action_queue::ActionQueue;
@@ -12,16 +12,16 @@ pub struct ServerActions {
 }
 
 pub struct GameGrid {
-    dims: Coords,
+    dims: Vec<usize>,
     cells: Vec<Cell>,
 }
 
 impl GameGrid {
-    pub fn new(dims: Coords) -> Self {
+    pub fn new(dims: Vec<usize>) -> Self {
         let all_coords = dims.iter().map(|&d| 0..d).multi_cartesian_product();
 
         let cells = all_coords.enumerate().map(|(i, coords)| {
-            Cell::new(i, surr_indices(&coords, &dims))
+            Cell::new(i, Coords(coords).surr_indices(&dims))
         }).collect();
 
         GameGrid { dims, cells }
@@ -37,7 +37,7 @@ impl GameGrid {
             state,
             ref coords
         } in cell_info.iter() {
-            let index = coords_to_index(coords, &dims);
+            let index = coords.to_index(&dims);
             let action_type = match state {
                 CellState::Cleared => SingleCellAction::ClientClear {
                     mines: surrounding
@@ -82,10 +82,10 @@ impl GameGrid {
 
         let next_actions = ServerActions {
             to_clear: actions.get_to_clear()
-                .map(|&i| index_to_coords(i, &dims))
+                .map(|&i| Coords::from_index(i, &dims))
                 .collect(),
             to_flag: actions.get_to_flag()
-                .map(|&i| index_to_coords(i, &dims))
+                .map(|&i| Coords::from_index(i, &dims))
                 .collect(),
         };
         let game_grid = GameGrid { dims, cells };

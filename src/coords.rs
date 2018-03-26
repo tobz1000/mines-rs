@@ -4,49 +4,49 @@ use std::collections::HashSet;
 use std::iter::repeat;
 use std::convert::TryInto;
 
-pub type Coords = Vec<usize>;
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Coords(pub Vec<usize>);
 
-pub fn surr_indices(coords: &Coords, dims: &Coords) -> HashSet<usize> {
-    let offsets = repeat(-1..=1).take(dims.len())
-        .multi_cartesian_product()
-        .filter(|offset| offset.iter().any(|&c| c != 0));
+impl Coords {
+    pub fn from_index(index: usize, dims: &[usize]) -> Self {
+        let mut coords = vec![0; dims.len()];
+        let mut remainder = index;
 
-    let surr_coords = offsets.filter_map(|offset| -> Option<Coords> {
-        let mut surr = vec![];
-
-        for ((o, &c), &d) in offset.into_iter()
-            .zip(coords.iter())
-            .zip(dims.iter())
-        {
-            let s = (o + (c as isize)).try_into().ok()?;
-            if s >= d { return None; }
-            surr.push(s);
+        for i in (0..dims.len()).rev() {
+            coords[i] = remainder % dims[i];
+            remainder /= dims[i];
         }
 
-        Some(surr)
-    });
+        Coords(coords)
+    }
 
-    surr_coords.map(|s| coords_to_index(&s, dims)).collect()
-}
+    pub fn to_index(&self, dims: &[usize]) -> usize {
+        self.0.iter().zip(dims.iter())
+            .fold(0, |acc, (&coord, &dim)| (acc * dim) + coord)
+    }
 
-pub fn coords_to_index(coords: &Coords, dims: &Coords) -> usize {
-    coords.iter().zip(dims.iter())
-        .fold(0, |acc, (&coord, &dim)| (acc * dim) + coord)
-}
+    pub fn surr_indices(&self, dims: &[usize]) -> HashSet<usize> {
+        let offsets = repeat(-1..=1).take(dims.len())
+            .multi_cartesian_product()
+            .filter(|offset| offset.iter().any(|&c| c != 0));
 
-pub fn index_to_coords(index: usize, dims: &Coords) -> Coords {
-    let mut coords: Coords = dims.iter()
-        .rev()
-        .scan(index, |rem, &dim| {
-            let coord = *rem % dim;
-            *rem /= dim;
-            Some(coord)
-        })
-        .collect();
+        let surr_coords = offsets.filter_map(|offset| -> Option<Coords> {
+            let mut surr = vec![];
 
-    coords.reverse();
+            for ((o, &c), &d) in offset.into_iter()
+                .zip(self.0.iter())
+                .zip(dims.iter())
+            {
+                let s = (o + (c as isize)).try_into().ok()?;
+                if s >= d { return None; }
+                surr.push(s);
+            }
 
-    coords
+            Some(Coords(surr))
+        });
+
+        surr_coords.map(|surr| surr.to_index(dims)).collect()
+    }
 }
 
 #[test]
@@ -60,6 +60,6 @@ fn test_surr_indices() {
         (vec![1, 0], vec![2, 2], vec![0, 1, 3])
     ] {
         let exp_set = exp.into_iter().collect();
-        assert_eq!(surr_indices(&coords, &dims), exp_set);
+        assert_eq!(Coords(coords).surr_indices(&dims), exp_set);
     }
 }

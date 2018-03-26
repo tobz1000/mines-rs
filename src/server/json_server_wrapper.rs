@@ -29,7 +29,7 @@ pub struct JsonServerWrapper<'a> {
 
 impl<'a> JsonServerWrapper<'a> {
 	pub fn new_game(
-		dims: Coords,
+		dims: Vec<usize>,
 		mines: usize,
 		seed: Option<u64>,
 		autoclear: bool,
@@ -157,7 +157,7 @@ mod json_server_requests {
 	pub struct NewGameRequest<'a> {
 		pub client: &'a str,
 		pub seed: Option<u64>,
-		pub dims: Coords,
+		pub dims: Vec<usize>,
 		pub mines: usize,
 		pub autoclear: bool,
 	}
