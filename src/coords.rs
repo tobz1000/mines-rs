@@ -3,8 +3,9 @@ use itertools::Itertools;
 use std::collections::HashSet;
 use std::iter::repeat;
 use std::convert::TryInto;
+use std::fmt;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Coords(pub Vec<usize>);
 
 impl Coords {
@@ -46,6 +47,12 @@ impl Coords {
         });
 
         surr_coords.map(|surr| surr.to_index(dims)).collect()
+    }
+}
+
+impl fmt::Debug for Coords {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
     }
 }
 
