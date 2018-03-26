@@ -1,5 +1,5 @@
 use std::collections::{VecDeque, HashSet};
-use cell::Action;
+use client::cell::Action;
 
 pub struct ActionQueue {
     actions: VecDeque<Action>,
