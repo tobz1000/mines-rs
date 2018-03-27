@@ -5,11 +5,9 @@ use coords::Coords;
 use client::cell::{Cell, Action, SingleCellAction};
 use client::action_queue::ActionQueue;
 use server::json_api::resp::{CellInfo, CellState};
-use server::json_server_wrapper::JsonServerWrapper;
 use server::GameServer;
 use game_grid::GameGrid;
 use util::index_pair;
-use self::tokio_core::reactor;
 
 #[derive(Debug)]
 struct ServerActions {
@@ -22,24 +20,11 @@ pub struct Client<G: GameServer> {
     server: G
 }
 
-impl<'a> Client<JsonServerWrapper<'a>> {
-    pub fn new(
-        dims: Vec<usize>,
-        mines: usize,
-        seed: Option<u64>,
-        autoclear: bool,
-        event_loop_core: &'a mut reactor::Core
-    ) -> Result<Self, Box<Error>> {
-        let server = JsonServerWrapper::new_game(
-            dims.clone(),
-            mines,
-            seed,
-            autoclear,
-            event_loop_core,
-        )?;
-        let grid = GameGrid::new(dims, Cell::new);
+impl<G: GameServer> Client<G> {
+    pub fn new(server: G) -> Self {
+        let grid = GameGrid::new(server.status().dims.clone(), Cell::new);
 
-        Ok(Client { grid, server })
+        Client { grid, server }
     }
 
     pub fn play(&mut self) -> Result<bool, Box<Error>> {
