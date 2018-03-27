@@ -1,8 +1,9 @@
 pub mod json_server_wrapper;
+pub mod json_api;
 
 use std::error::Error;
 use coords::Coords;
-use self::json_server_wrapper::server_response::ServerResponse;
+use self::json_api::resp::ServerResponse;
 
 pub trait GameServer {
 	fn turn(

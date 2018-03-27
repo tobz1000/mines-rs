@@ -4,7 +4,7 @@ use std::error::Error;
 use coords::Coords;
 use client::cell::{Cell, Action, SingleCellAction};
 use client::action_queue::ActionQueue;
-use server::json_server_wrapper::server_response::{CellInfo, CellState};
+use server::json_api::resp::{CellInfo, CellState};
 use server::json_server_wrapper::JsonServerWrapper;
 use server::GameServer;
 use game_grid::GameGrid;
