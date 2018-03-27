@@ -1,19 +1,23 @@
 use itertools::Itertools;
 
-use coords::Coords;
-use client::Cell;
+use std::collections::HashSet;
 
-pub struct GameGrid {
+use coords::Coords;
+
+pub struct GameGrid<C> {
     pub dims: Vec<usize>,
-    pub cells: Vec<Cell>,
+    pub cells: Vec<C>,
 }
 
-impl GameGrid {
-    pub fn new(dims: Vec<usize>) -> Self {
+impl<C> GameGrid<C> {
+    pub fn new(
+        dims: Vec<usize>,
+        get_cell: fn(index: usize, surr: HashSet<usize>) -> C
+    ) -> Self {
         let all_coords = dims.iter().map(|&d| 0..d).multi_cartesian_product();
 
         let cells = all_coords.enumerate().map(|(i, coords)| {
-            Cell::new(i, Coords(coords).surr_indices(&dims))
+            get_cell(i, Coords(coords).surr_indices(&dims))
         }).collect();
 
         GameGrid { dims, cells }

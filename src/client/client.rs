@@ -18,7 +18,7 @@ struct ServerActions {
 }
 
 pub struct Client<G: GameServer> {
-    grid: GameGrid,
+    grid: GameGrid<Cell>,
     server: G
 }
 
@@ -37,7 +37,7 @@ impl<'a> Client<JsonServerWrapper<'a>> {
             autoclear,
             event_loop_core,
         )?;
-        let grid = GameGrid::new(dims);
+        let grid = GameGrid::new(dims, Cell::new);
 
         Ok(Client { grid, server })
     }
