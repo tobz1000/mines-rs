@@ -5,7 +5,7 @@ use std::iter::repeat;
 use std::convert::TryInto;
 use std::fmt;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Coords(pub Vec<usize>);
 
 impl Coords {
