@@ -10,9 +10,9 @@ pub struct GameGrid<C> {
 }
 
 impl<C> GameGrid<C> {
-    pub fn new(
+    pub fn new<F: Fn(usize, HashSet<usize>) -> C>(
         dims: Vec<usize>,
-        get_cell: fn(index: usize, surr: HashSet<usize>) -> C
+        get_cell: F
     ) -> Self {
         let all_coords = dims.iter().map(|&d| 0..d).multi_cartesian_product();
 

@@ -1,11 +1,13 @@
 extern crate rand;
 extern crate chrono;
+extern crate itertools;
 
 use std::fmt;
 use std::error::Error;
 use std::collections::{VecDeque, HashSet};
 use self::rand::{Rng, thread_rng};
 use self::chrono::{DateTime, Utc};
+use self::itertools::Itertools;
 
 use coords::Coords;
 use server::GameServer;
@@ -18,10 +20,12 @@ enum CellAction { NoAction, Flagged, Cleared }
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum GameState { Ongoing, Win, Lose }
 
+#[derive(Debug)]
 struct Cell {
     mine: bool,
     action: CellAction,
-    surr_indices: HashSet<usize>
+    surr_indices: HashSet<usize>,
+    surr_mine_count: usize
 }
 
 impl Cell {
@@ -46,7 +50,7 @@ pub struct NativeServer {
 }
 
 impl NativeServer {
-    fn new(dims: Vec<usize>, mines: usize, autoclear: bool) -> Self {
+    pub fn new(dims: Vec<usize>, mines: usize, autoclear: bool) -> Self {
         let size = dims.iter().fold(1, |s, &i| s * i);
 
         if dims.len() == 0 || mines >= size {
@@ -58,24 +62,35 @@ impl NativeServer {
             );
         }
 
-        let mut grid = GameGrid::new(dims, |_i, surr| Cell {
-            mine: false,
-            action: CellAction::NoAction,
-            surr_indices: surr
-        });
+        let grid: GameGrid<Cell> = {
+            let mut rng = thread_rng();
 
-        let mut rng = thread_rng();
+            // Place mines randomly using Fisher-Yates shuffle
+            let mut mine_arr = vec![false; size];
 
-        // Place mines randomly using Fisher-Yates shuffle
-        for i in 0..grid.cells.len() {
-            let rand = rng.gen_range(0, i);
+            for i in 0..size {
+                let rand = if i == 0 { 0 } else { rng.gen_range(0, i) };
 
-            if rand != i {
-                grid.cells[i].mine = grid.cells[rand].mine;
+                if rand != i {
+                    mine_arr[i] = mine_arr[rand];
+                }
+
+                mine_arr[rand] = i < mines;
             }
 
-            grid.cells[rand].mine = i <= mines;
-        }
+            GameGrid::new(dims, |i, surr| {
+                let surr_mine_count = surr.iter()
+                    .filter(|&&s| mine_arr[s])
+                    .count();
+
+                Cell {
+                    mine: mine_arr[i],
+                    action: CellAction::NoAction,
+                    surr_indices: surr,
+                    surr_mine_count
+                }
+            })
+        };
 
         let mut server = NativeServer {
             created_at: Utc::now(),
@@ -93,6 +108,42 @@ impl NativeServer {
         server
     }
 
+    pub fn grid_repr(&self) -> Result<String, GameError> {
+        if self.grid.dims.len() > 2 {
+            return Err(GameError(format!(
+                "Can only repr game of <= 2 dimensions; dims={:?}",
+                self.grid.dims
+            )));
+        }
+
+        let cell_repr = |x, y| {
+            let index = Coords(vec![x, y]).to_index(&self.grid.dims);
+            let cell = &self.grid.cells[index];
+            match cell.action {
+                CellAction::NoAction => '□',
+                CellAction::Flagged => '⚐',
+                CellAction::Cleared => {
+                    if cell.mine {
+                        '☢'
+                    } else {
+                        match cell.surr_mine_count {
+                            0 => ' ',
+                            c => (c as u8 + '0' as u8) as char
+                        }
+                    }
+                }
+            }
+        };
+
+        let row_repr = |y| (0..self.grid.dims[0])
+            .map(|x| cell_repr(x, y))
+            .join(" ");
+
+        let row_count = *self.grid.dims.get(1).unwrap_or(&1);
+
+        Ok((0..row_count).map(row_repr).join("\n"))
+    }
+
     fn clear_cells(&mut self, to_clear: &[Coords]) -> Vec<CellInfo> {
         let mut clear_actual = Vec::new();
         let mut coords_stack: VecDeque<(usize, Coords)> = to_clear.iter()
@@ -105,7 +156,7 @@ impl NativeServer {
             if let Err(_) = cell.set_action(CellAction::Cleared) { continue; }
 
             clear_actual.push(CellInfo {
-                surrounding: cell.surr_indices.len(),
+                surrounding: cell.surr_mine_count,
                 state: if cell.mine { CellState::Mine } else { CellState::Cleared },
                 coords: coords
             });
@@ -113,7 +164,7 @@ impl NativeServer {
             if cell.mine {
                 self.game_state = GameState::Lose;
             } else {
-                if self.autoclear && cell.surr_indices.len() == 0 {
+                if self.autoclear && cell.surr_mine_count == 0 {
                     for &i in cell.surr_indices.iter() {
                         coords_stack.push_front(
                             (i, Coords::from_index(i, &self.grid.dims))
@@ -199,6 +250,10 @@ impl GameServer for NativeServer {
         );
 
         self.turns.push(turn_info);
+
+        if let Ok(repr) = self.grid_repr() {
+            println!("{}", repr);
+        }
 
         Ok(())
     }

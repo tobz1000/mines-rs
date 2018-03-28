@@ -22,7 +22,7 @@ mod util;
 use self::tokio_core::reactor;
 use std::error::Error;
 use client::Client;
-use server::JsonServerWrapper;
+use server::{JsonServerWrapper, NativeServer};
 
 fn main() {
     main_try().unwrap();
@@ -30,13 +30,14 @@ fn main() {
 
 fn main_try() -> Result<(), Box<Error>> {
     let mut event_loop_core = reactor::Core::new()?;
-    let server = JsonServerWrapper::new_game(
-        vec![25, 25],
-        150,
-        Some(109746378),
-        true,
-        &mut event_loop_core
-    )?;
+    // let server = JsonServerWrapper::new_game(
+    //     vec![25, 25],
+    //     150,
+    //     Some(109746378),
+    //     true,
+    //     &mut event_loop_core
+    // )?;
+    let server = NativeServer::new(vec![25, 25], 150, true);
     let mut client = Client::new(server);
 
     let win = client.play()?;
