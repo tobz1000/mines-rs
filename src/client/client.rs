@@ -7,7 +7,6 @@ use client::action_queue::ActionQueue;
 use server::json_api::resp::{CellInfo, CellState};
 use server::GameServer;
 use game_grid::GameGrid;
-use util::index_pair;
 
 #[derive(Debug)]
 struct ServerActions {
@@ -16,20 +15,22 @@ struct ServerActions {
 }
 
 pub struct Client<G: GameServer> {
+    dims: Vec<usize>,
     grid: GameGrid<Cell>,
     server: G
 }
 
 impl<G: GameServer> Client<G> {
     pub fn new(server: G) -> Self {
-        let grid = GameGrid::new(server.status().dims.clone(), Cell::new);
+        let dims = server.status().dims.clone();
+        let grid = GameGrid::new(&dims, Cell::new);
 
-        Client { grid, server }
+        Client { dims, grid, server }
     }
 
     pub fn play(&mut self) -> Result<bool, Box<Error>> {
         let mut to_clear = vec![Coords(
-            self.grid.dims.iter().map(|&d| d / 2).collect()
+            self.dims.iter().map(|&d| d / 2).collect()
         )];
         let mut to_flag = vec![];
 
@@ -61,7 +62,7 @@ impl<G: GameServer> Client<G> {
             state,
             ref coords
         } in self.server.status().clear_actual.iter() {
-            let index = coords.to_index(&self.grid.dims);
+            let index = coords.to_index(&self.dims);
             let action_type = match state {
                 CellState::Cleared => SingleCellAction::ClientClear {
                     mines: surrounding
@@ -75,7 +76,7 @@ impl<G: GameServer> Client<G> {
         while let Some(action) = actions.pull() {
             match action {
                 Action::Single { index, action_type } => {
-                    let cell = &mut self.grid.cells[index];
+                    let cell = &mut self.grid[index];
                     let mut complete = false;
 
                     if let &mut Cell::Ongoing(ref mut ongoing) = cell {
@@ -87,7 +88,7 @@ impl<G: GameServer> Client<G> {
                     }
                 },
                 Action::Pair { index1, index2, action_type } => {
-                    match index_pair(&mut self.grid.cells, index1, index2) {
+                    match self.grid.cell_pair(index1, index2) {
                         (
                             &mut Cell::Ongoing(ref mut cell1),
                             &mut Cell::Ongoing(ref mut cell2)
@@ -106,10 +107,10 @@ impl<G: GameServer> Client<G> {
 
         let next_actions = ServerActions {
             to_clear: actions.get_to_clear()
-                .map(|&i| Coords::from_index(i, &self.grid.dims))
+                .map(|&i| Coords::from_index(i, &self.dims))
                 .collect(),
             to_flag: actions.get_to_flag()
-                .map(|&i| Coords::from_index(i, &self.grid.dims))
+                .map(|&i| Coords::from_index(i, &self.dims))
                 .collect(),
         };
 

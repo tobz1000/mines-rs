@@ -14,6 +14,19 @@ use server::GameServer;
 use server::json_api::resp::{ServerResponse, CellInfo, CellState};
 use game_grid::GameGrid;
 
+#[derive(Debug)]
+pub struct GameError(String);
+
+impl Error for GameError {
+    fn description(&self) -> &str { &self.0 }
+}
+
+impl fmt::Display for GameError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum CellAction { NoAction, Flagged, Cleared }
 
@@ -41,6 +54,7 @@ impl Cell {
 
 pub struct NativeServer {
     created_at: DateTime<Utc>,
+    dims: Vec<usize>,
     grid: GameGrid<Cell>,
     mines: usize,
     autoclear: bool,
@@ -78,7 +92,7 @@ impl NativeServer {
                 mine_arr[rand] = i < mines;
             }
 
-            GameGrid::new(dims, |i, surr| {
+            GameGrid::new(&dims, |i, surr| {
                 let surr_mine_count = surr.iter()
                     .filter(|&&s| mine_arr[s])
                     .count();
@@ -94,6 +108,7 @@ impl NativeServer {
 
         let mut server = NativeServer {
             created_at: Utc::now(),
+            dims,
             mines,
             autoclear,
             grid,
@@ -109,16 +124,16 @@ impl NativeServer {
     }
 
     pub fn grid_repr(&self) -> Result<String, GameError> {
-        if self.grid.dims.len() > 2 {
+        if self.dims.len() > 2 {
             return Err(GameError(format!(
                 "Can only repr game of <= 2 dimensions; dims={:?}",
-                self.grid.dims
+                self.dims
             )));
         }
 
         let cell_repr = |x, y| {
-            let index = Coords(vec![x, y]).to_index(&self.grid.dims);
-            let cell = &self.grid.cells[index];
+            let index = Coords(vec![x, y]).to_index(&self.dims);
+            let cell = &self.grid[index];
             match cell.action {
                 CellAction::NoAction => '□',
                 CellAction::Flagged => '⚐',
@@ -135,11 +150,11 @@ impl NativeServer {
             }
         };
 
-        let row_repr = |y| (0..self.grid.dims[0])
+        let row_repr = |y| (0..self.dims[0])
             .map(|x| cell_repr(x, y))
             .join(" ");
 
-        let row_count = *self.grid.dims.get(1).unwrap_or(&1);
+        let row_count = *self.dims.get(1).unwrap_or(&1);
 
         Ok((0..row_count).map(row_repr).join("\n"))
     }
@@ -147,11 +162,11 @@ impl NativeServer {
     fn clear_cells(&mut self, to_clear: &[Coords]) -> Vec<CellInfo> {
         let mut clear_actual = Vec::new();
         let mut coords_stack: VecDeque<(usize, Coords)> = to_clear.iter()
-            .map(|coords| (coords.to_index(&self.grid.dims), coords.clone()))
+            .map(|coords| (coords.to_index(&self.dims), coords.clone()))
             .collect();
 
         while let Some((index, coords)) = coords_stack.pop_front() {
-            let cell = &mut self.grid.cells[index];
+            let cell = &mut self.grid[index];
 
             if let Err(_) = cell.set_action(CellAction::Cleared) { continue; }
 
@@ -167,7 +182,7 @@ impl NativeServer {
                 if self.autoclear && cell.surr_mine_count == 0 {
                     for &i in cell.surr_indices.iter() {
                         coords_stack.push_front(
-                            (i, Coords::from_index(i, &self.grid.dims))
+                            (i, Coords::from_index(i, &self.dims))
                         );
                     }
                 }
@@ -191,8 +206,8 @@ impl NativeServer {
         let mut actual_change = Vec::new();
 
         for coords in to_change.into_iter() {
-            let index = coords.to_index(&self.grid.dims);
-            let cell = &mut self.grid.cells[index];
+            let index = coords.to_index(&self.dims);
+            let cell = &mut self.grid[index];
 
             if let Ok(_) = cell.set_action(new_action) {
                 actual_change.push(coords);
@@ -212,7 +227,7 @@ impl NativeServer {
         ServerResponse {
             id: "someid".to_string(),
             seed: 0,
-            dims: self.grid.dims.clone(),
+            dims: self.dims.clone(),
             mines: self.mines,
             turn_num: self.turns.len(),
             game_over: self.game_state != GameState::Ongoing,
@@ -260,18 +275,5 @@ impl GameServer for NativeServer {
 
     fn status(&self) -> &ServerResponse {
         self.turns.last().unwrap()
-    }
-}
-
-#[derive(Debug)]
-struct GameError(String);
-
-impl Error for GameError {
-    fn description(&self) -> &str { &self.0 }
-}
-
-impl fmt::Display for GameError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
     }
 }

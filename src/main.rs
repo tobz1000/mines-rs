@@ -2,7 +2,7 @@
 #![feature(inclusive_range_syntax)]
 #![feature(range_contains)]
 #![feature(conservative_impl_trait)]
-#![feature(try_from)]
+#![feature(vec_resize_default)]
 
 #![feature(proc_macro, conservative_impl_trait, generators)]
 
