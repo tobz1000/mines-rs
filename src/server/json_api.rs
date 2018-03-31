@@ -63,7 +63,7 @@ pub mod resp {
     #[serde(rename_all = "camelCase")]
     pub struct ServerResponse {
         pub id: String,
-        pub seed: u64,
+        pub seed: u32,
         pub dims: Vec<usize>,
         pub mines: usize,
         pub turn_num: usize,

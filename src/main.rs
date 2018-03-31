@@ -9,6 +9,8 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate itertools;
+extern crate mersenne_twister;
+extern crate rand;
 
 extern crate serde_json;
 extern crate tokio_core;
@@ -19,17 +21,18 @@ mod game_grid;
 mod client;
 mod util;
 
-use self::tokio_core::reactor;
+// use self::tokio_core::reactor;
 use std::error::Error;
 use client::Client;
-use server::{JsonServerWrapper, NativeServer};
+// use server::JsonServerWrapper
+use server::NativeServer;
 
 fn main() {
     main_try().unwrap();
 }
 
 fn main_try() -> Result<(), Box<Error>> {
-    let mut event_loop_core = reactor::Core::new()?;
+    // let mut event_loop_core = reactor::Core::new()?;
     // let server = JsonServerWrapper::new_game(
     //     vec![25, 25],
     //     150,
@@ -37,7 +40,7 @@ fn main_try() -> Result<(), Box<Error>> {
     //     true,
     //     &mut event_loop_core
     // )?;
-    let server = NativeServer::new(vec![25, 25], 150, true);
+    let server = NativeServer::new(vec![25, 25], 150, Some(109746378), true);
     let mut client = Client::new(server);
 
     let win = client.play()?;

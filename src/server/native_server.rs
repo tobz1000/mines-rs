@@ -1,13 +1,15 @@
 extern crate rand;
 extern crate chrono;
 extern crate itertools;
+extern crate mersenne_twister;
 
 use std::fmt;
 use std::error::Error;
 use std::collections::{VecDeque, HashSet};
-use self::rand::{Rng, thread_rng};
+use self::rand::{Rng, thread_rng, SeedableRng};
 use self::chrono::{DateTime, Utc};
 use self::itertools::Itertools;
+use self::mersenne_twister::MT19937;
 
 use coords::Coords;
 use server::GameServer;
@@ -57,6 +59,7 @@ pub struct NativeServer {
     dims: Vec<usize>,
     grid: GameGrid<Cell>,
     mines: usize,
+    seed: u32,
     autoclear: bool,
     cells_rem: usize,
     game_state: GameState,
@@ -64,7 +67,12 @@ pub struct NativeServer {
 }
 
 impl NativeServer {
-    pub fn new(dims: Vec<usize>, mines: usize, autoclear: bool) -> Self {
+    pub fn new(
+        dims: Vec<usize>,
+        mines: usize,
+        user_seed: Option<u32>,
+        autoclear: bool,
+    ) -> Self {
         let size = dims.iter().fold(1, |s, &i| s * i);
 
         if dims.len() == 0 || mines >= size {
@@ -76,14 +84,26 @@ impl NativeServer {
             );
         }
 
+        let seed = if let Some(seed) = user_seed {
+            seed    
+        } else {
+            thread_rng().gen()
+        };
+
         let grid: GameGrid<Cell> = {
-            let mut rng = thread_rng();
+            let mut rng: MT19937 = SeedableRng::from_seed(seed);
 
             // Place mines randomly using Fisher-Yates shuffle
             let mut mine_arr = vec![false; size];
 
             for i in 0..size {
-                let rand = if i == 0 { 0 } else { rng.gen_range(0, i) };
+                // Avoid rng-generation on first iteration to match the JS
+                // server's behaviour
+                let rand = if i == 0 {
+                    0
+                } else {
+                    rng.gen_range(0, (i + 1) as i32) as usize
+                };
 
                 if rand != i {
                     mine_arr[i] = mine_arr[rand];
@@ -110,6 +130,7 @@ impl NativeServer {
             created_at: Utc::now(),
             dims,
             mines,
+            seed,
             autoclear,
             grid,
             cells_rem: size - mines,
@@ -226,7 +247,7 @@ impl NativeServer {
     ) -> ServerResponse {
         ServerResponse {
             id: "someid".to_string(),
-            seed: 0,
+            seed: self.seed,
             dims: self.dims.clone(),
             mines: self.mines,
             turn_num: self.turns.len(),
