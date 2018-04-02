@@ -5,7 +5,7 @@ extern crate mersenne_twister;
 
 use std::fmt;
 use std::error::Error;
-use std::collections::{VecDeque, HashSet};
+use std::collections::HashSet;
 use self::rand::{Rng, thread_rng, SeedableRng};
 use self::chrono::{DateTime, Utc};
 use self::itertools::Itertools;
@@ -291,10 +291,6 @@ impl GameServer for NativeServer {
         );
 
         self.turns.push(turn_info);
-
-        if let Ok(repr) = self.grid_repr() {
-            println!("{}", repr);
-        }
 
         Ok(())
     }

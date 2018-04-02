@@ -32,9 +32,6 @@ impl<G: GameServer> Client<G> {
         let mut to_flag = vec![];
 
         while !(to_clear.is_empty() && to_flag.is_empty()) {
-            println!("to_clear {:?}", to_clear);
-            println!("to_flag {:?}", to_flag);
-
             self.server.turn(to_clear, to_flag, vec![])?;
 
             if self.server.game_state() != GameState::Ongoing { break; }
