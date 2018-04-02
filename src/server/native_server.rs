@@ -12,8 +12,7 @@ use self::itertools::Itertools;
 use self::mersenne_twister::MT19937;
 
 use coords::Coords;
-use server::GameServer;
-use server::json_api::resp::{ServerResponse, CellInfo, CellState};
+use server::{GameServer, GameState, CellInfo};
 use game_grid::GameGrid;
 
 #[derive(Debug)]
@@ -31,9 +30,6 @@ impl fmt::Display for GameError {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum CellAction { NoAction, Flagged, Cleared }
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum GameState { Ongoing, Win, Lose }
 
 #[derive(Debug)]
 struct Cell {
@@ -54,6 +50,16 @@ impl Cell {
     }
 }
 
+struct TurnInfo {
+    timestamp: DateTime<Utc>,
+    clear_req: Vec<usize>,
+    clear_actual: Vec<usize>,
+    flagged: Vec<usize>,
+    unflagged: Vec<usize>,
+    cells_rem: usize,
+    game_state: GameState,
+}
+
 pub struct NativeServer {
     created_at: DateTime<Utc>,
     dims: Vec<usize>,
@@ -63,7 +69,7 @@ pub struct NativeServer {
     autoclear: bool,
     cells_rem: usize,
     game_state: GameState,
-    turns: Vec<ServerResponse>,
+    turns: Vec<TurnInfo>,
 }
 
 impl NativeServer {
@@ -180,31 +186,22 @@ impl NativeServer {
         Ok((0..row_count).map(row_repr).join("\n"))
     }
 
-    fn clear_cells(&mut self, to_clear: &[Coords]) -> Vec<CellInfo> {
+    fn clear_cells(&mut self, mut to_clear: Vec<usize>) -> Vec<usize> {
         let mut clear_actual = Vec::new();
-        let mut coords_stack: VecDeque<(usize, Coords)> = to_clear.iter()
-            .map(|coords| (coords.to_index(&self.dims), coords.clone()))
-            .collect();
 
-        while let Some((index, coords)) = coords_stack.pop_front() {
+        while let Some(index) = to_clear.pop() {
             let cell = &mut self.grid[index];
 
             if let Err(_) = cell.set_action(CellAction::Cleared) { continue; }
 
-            clear_actual.push(CellInfo {
-                surrounding: cell.surr_mine_count,
-                state: if cell.mine { CellState::Mine } else { CellState::Cleared },
-                coords: coords
-            });
+            clear_actual.push(index);
 
             if cell.mine {
                 self.game_state = GameState::Lose;
             } else {
                 if self.autoclear && cell.surr_mine_count == 0 {
                     for &i in cell.surr_indices.iter() {
-                        coords_stack.push_front(
-                            (i, Coords::from_index(i, &self.dims))
-                        );
+                        to_clear.push(i);
                     }
                 }
 
@@ -223,7 +220,7 @@ impl NativeServer {
         &mut self,
         to_change: Vec<Coords>,
         new_action: CellAction
-    ) -> Vec<Coords> {
+    ) -> Vec<usize> {
         let mut actual_change = Vec::new();
 
         for coords in to_change.into_iter() {
@@ -231,7 +228,7 @@ impl NativeServer {
             let cell = &mut self.grid[index];
 
             if let Ok(_) = cell.set_action(new_action) {
-                actual_change.push(coords);
+                actual_change.push(index);
             }
         }
 
@@ -240,25 +237,29 @@ impl NativeServer {
 
     fn turn_info(
         &self,
-        clear_req: Vec<Coords>,
-        clear_actual: Vec<CellInfo>,
-        flagged: Vec<Coords>,
-        unflagged: Vec<Coords>
-    ) -> ServerResponse {
-        ServerResponse {
-            id: "someid".to_string(),
-            seed: self.seed,
-            dims: self.dims.clone(),
-            mines: self.mines,
-            turn_num: self.turns.len(),
-            game_over: self.game_state != GameState::Ongoing,
-            win: self.game_state == GameState::Win,
-            cells_rem: self.cells_rem,
+        clear_req: Vec<usize>,
+        clear_actual: Vec<usize>,
+        flagged: Vec<usize>,
+        unflagged: Vec<usize>
+    ) -> TurnInfo {
+        TurnInfo {
+            timestamp: Utc::now(),
+            clear_req,
+            clear_actual,
             flagged,
             unflagged,
-            clear_actual,
-            clear_req,
-            turn_taken_at: Utc::now()
+            cells_rem: self.cells_rem,
+            game_state: self.game_state,
+        }
+    }
+
+    fn client_cell_info(&self, index: usize) -> CellInfo {
+        let cell = &self.grid[index];
+
+        CellInfo {
+            coords: Coords::from_index(index, &self.dims),
+            mine: cell.mine,
+            surrounding: cell.surr_mine_count
         }
     }
 }
@@ -274,12 +275,16 @@ impl GameServer for NativeServer {
             return Err(GameError(String::from("Game already finished")))?;
         }
 
-        let clear_actual = self.clear_cells(&clear);
+        let clear_req_indices: Vec<usize> = clear.iter()
+            .map(|coords| coords.to_index(&self.dims))
+            .collect();
+
+        let clear_actual = self.clear_cells(clear_req_indices.clone());
         let flag_actual = self.set_flags(flag, CellAction::Flagged);
         let unflag_actual = self.set_flags(unflag, CellAction::NoAction);
 
         let turn_info = self.turn_info(
-            clear,
+            clear_req_indices,
             clear_actual,
             flag_actual,
             unflag_actual
@@ -294,7 +299,17 @@ impl GameServer for NativeServer {
         Ok(())
     }
 
-    fn status(&self) -> &ServerResponse {
-        self.turns.last().unwrap()
+	fn dims(&self) -> &[usize] { &self.dims }
+
+	fn mines(&self) -> usize { self.mines }
+
+	fn game_state(&self) -> GameState { self.game_state }
+
+	fn cells_rem(&self) -> usize { self.cells_rem }
+
+	fn clear_actual(&self) -> Vec<CellInfo> {
+        self.turns.last().unwrap().clear_actual.iter()
+            .map(|&index| self.client_cell_info(index))
+            .collect()
     }
 }

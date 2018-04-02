@@ -47,7 +47,7 @@ pub mod resp {
     use self::chrono::{DateTime, Utc};
     use coords::Coords;
 
-    #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+    #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
     #[serde(rename_all = "camelCase")]
     pub enum CellState { Cleared, Mine }
 

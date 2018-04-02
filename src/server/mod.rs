@@ -1,4 +1,4 @@
-pub mod json_api;
+mod json_api;
 mod json_server_wrapper;
 mod native_server;
 
@@ -7,7 +7,9 @@ pub use self::native_server::NativeServer;
 
 use std::error::Error;
 use coords::Coords;
-use self::json_api::resp::ServerResponse;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum GameState { Ongoing, Win, Lose }
 
 pub trait GameServer {
 	fn turn(
@@ -17,5 +19,20 @@ pub trait GameServer {
 		unflag: Vec<Coords>,
 	) -> Result<(), Box<Error>>;
 
-    fn status(&self) -> &ServerResponse;
+	fn dims(&self) -> &[usize];
+
+	fn mines(&self) -> usize;
+
+	fn game_state(&self) -> GameState;
+
+	fn cells_rem(&self) -> usize;
+
+	fn clear_actual(&self) -> Vec<CellInfo>;
+}
+
+#[derive(Debug)]
+pub struct CellInfo {
+	pub coords: Coords,
+	pub mine: bool,	
+	pub surrounding: usize,
 }

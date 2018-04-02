@@ -4,8 +4,7 @@ use std::error::Error;
 use coords::Coords;
 use client::cell::{Cell, Action, SingleCellAction};
 use client::action_queue::ActionQueue;
-use server::json_api::resp::{CellInfo, CellState};
-use server::GameServer;
+use server::{GameServer, GameState, CellInfo};
 use game_grid::GameGrid;
 
 #[derive(Debug)]
@@ -15,35 +14,30 @@ struct ServerActions {
 }
 
 pub struct Client<G: GameServer> {
-    dims: Vec<usize>,
     grid: GameGrid<Cell>,
     server: G
 }
 
 impl<G: GameServer> Client<G> {
     pub fn new(server: G) -> Self {
-        let dims = server.status().dims.clone();
-        let grid = GameGrid::new(&dims, Cell::new);
+        let grid = GameGrid::new(server.dims(), Cell::new);
 
-        Client { dims, grid, server }
+        Client { grid, server }
     }
 
-    pub fn play(&mut self) -> Result<bool, Box<Error>> {
+    pub fn play(&mut self) -> Result<GameState, Box<Error>> {
         let mut to_clear = vec![Coords(
-            self.dims.iter().map(|&d| d / 2).collect()
+            self.server.dims().iter().map(|&d| d / 2).collect()
         )];
         let mut to_flag = vec![];
 
-        println!("{:?}", self.server.status());
-
         while !(to_clear.is_empty() && to_flag.is_empty()) {
-            println!("Turn {}", self.server.status().turn_num);
             println!("to_clear {:?}", to_clear);
             println!("to_flag {:?}", to_flag);
 
             self.server.turn(to_clear, to_flag, vec![])?;
 
-            if self.server.status().game_over { break; }
+            if self.server.game_state() != GameState::Ongoing { break; }
 
             let next_actions = self.next_turn();
 
@@ -51,23 +45,22 @@ impl<G: GameServer> Client<G> {
             to_flag = next_actions.to_flag;
         }
 
-        Ok(self.server.status().win)
+        Ok(self.server.game_state())
     }
 
     fn next_turn(&mut self) -> ServerActions {
         let mut actions = ActionQueue::new();
 
         for &CellInfo {
+            ref coords,
             surrounding,
-            state,
-            ref coords
-        } in self.server.status().clear_actual.iter() {
-            let index = coords.to_index(&self.dims);
-            let action_type = match state {
-                CellState::Cleared => SingleCellAction::ClientClear {
-                    mines: surrounding
-                },
-                CellState::Mine => SingleCellAction::Flag
+            mine,
+        } in self.server.clear_actual().iter() {
+            let index = coords.to_index(&self.server.dims());
+            let action_type = if mine {
+                SingleCellAction::Flag
+            } else {
+                SingleCellAction::ClientClear { mines: surrounding }
             };
 
             actions.push(Action::Single { index, action_type });
@@ -107,10 +100,10 @@ impl<G: GameServer> Client<G> {
 
         let next_actions = ServerActions {
             to_clear: actions.get_to_clear()
-                .map(|&i| Coords::from_index(i, &self.dims))
+                .map(|&i| Coords::from_index(i, &self.server.dims()))
                 .collect(),
             to_flag: actions.get_to_flag()
-                .map(|&i| Coords::from_index(i, &self.dims))
+                .map(|&i| Coords::from_index(i, &self.server.dims()))
                 .collect(),
         };
 

@@ -43,9 +43,9 @@ fn main_try() -> Result<(), Box<Error>> {
     let server = NativeServer::new(vec![25, 25], 150, Some(109746378), true);
     let mut client = Client::new(server);
 
-    let win = client.play()?;
+    let game_state = client.play()?;
 
-    println!("{}", if win { "win!" } else { "lose!" });
+    println!("{:?}", game_state);
 
     Ok(())
 }

@@ -8,9 +8,9 @@ use std::error::Error;
 use std::io;
 use std::str;
 use coords::Coords;
-use server::GameServer;
+use server::{GameServer, GameState, CellInfo as NativeCellInfo};
 use server::json_api::req::{JsonServerRequest, TurnRequest, NewGameRequest};
-use server::json_api::resp::ServerResponse;
+use server::json_api::resp::{ServerResponse, CellState, CellInfo as JsonCellInfo};
 use self::tokio_core::reactor;
 use self::futures::{Future, Stream};
 use self::hyper::Method;
@@ -127,7 +127,35 @@ impl<'a> GameServer for JsonServerWrapper<'a> {
 		self.turn(clear, flag, unflag)
 	}
 
-	fn status(&self) -> &ServerResponse {
-		&self.status
+	fn dims(&self) -> &[usize] { &self.status.dims }
+
+	fn mines(&self) -> usize { self.status.mines }
+
+	fn game_state(&self) -> GameState {
+		if self.status.game_over {
+			if self.status.win {
+				GameState::Win
+			} else {
+				GameState::Lose
+			}
+		} else {
+			GameState::Ongoing
+		}
+	}
+
+	fn cells_rem(&self) -> usize { self.status.cells_rem }
+
+	fn clear_actual(&self) -> Vec<NativeCellInfo> {
+		self.status.clear_actual.iter()
+			.map(|&JsonCellInfo {
+				surrounding,
+				state,
+				ref coords
+			}| NativeCellInfo {
+				coords: coords.clone(),
+				mine: state == CellState::Mine,
+				surrounding
+			})
+			.collect()
 	}
 }
