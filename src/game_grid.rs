@@ -18,6 +18,10 @@ impl<C> GameGrid<C> {
         dims: &[usize],
         get_cell: F
     ) -> Self {
+        if dims.iter().any(|&d| d < 2) {
+            panic!("All grid dimensions must be >= 2");
+        }
+
         let size = dims.iter().fold(1, |s, &i| s * i);
         let mut cells = Vec::with_capacity(size);
         cells.resize_default(size);
@@ -78,6 +82,8 @@ impl<C> IndexMut<usize> for GameGrid<C> {
     }
 }
 
+// Does not account for dims where some dimension is of size 1; will produce
+// incorrect (overflowing) offsets in this case.
 fn region_offsets(cell_region: &[DimReg], dims: &[usize]) -> Vec<isize> {
     cell_region.iter()
         .map(|&dim_region| match dim_region {
