@@ -162,27 +162,25 @@ impl OngoingCell {
     fn try_complete(&mut self, actions: &mut ActionQueue) -> bool {
         use self::SingleCellAction::*;
 
-        if let Some(action_type) = match self.unknown_surr_mines() {
-            Some(0) => Some(ServerClear),
-            Some(s) if s == self.unknown_surr.len() => Some(Flag),
-            _ => None
-        } {
-            for &surr in self.unknown_surr.iter() {
-                actions.push(Action::Single { index: surr, action_type });
+        if let Some(unknown_surr_mines) = self.unknown_surr_mines() {
+            if try_mark_cell_set(
+                unknown_surr_mines,
+                self.unknown_surr.iter(),
+                actions
+            ) {
+                return true;
             }
-
-            return true;
-        } else {
-            for &surr in self.total_surr.iter() {
-                actions.push(Action::Pair {
-                    index1: self.index,
-                    index2: surr,
-                    action_type: CellPairAction::CompareSurr
-                });
-            }
-
-            return false;
         }
+
+        for &surr in self.total_surr.iter() {
+            actions.push(Action::Pair {
+                index1: self.index,
+                index2: surr,
+                action_type: CellPairAction::CompareSurr
+            });
+        }
+
+        return false;
     }
 
     fn compare_surr(
@@ -194,45 +192,42 @@ impl OngoingCell {
             Some(self_unknown_mines),
             Some(other_unknown_mines)
         ) = (self.unknown_surr_mines(), other.unknown_surr_mines()) {
-            let self_excl: Vec<usize> = self.unknown_surr
-                .difference(&other.unknown_surr)
-                .map(|&i| i)
-                .collect();
-            let other_excl: Vec<usize> = other.unknown_surr
-                .difference(&self.unknown_surr)
-                .map(|&i| i)
-                .collect();
-            let common: Vec<usize> = self.unknown_surr
-                .intersection(&other.unknown_surr)
-                .map(|&i| i)
-                .collect();
+            let self_excl = || self.unknown_surr.difference(&other.unknown_surr);
+            let other_excl = || other.unknown_surr.difference(&self.unknown_surr);
+            let common = || self.unknown_surr.intersection(&other.unknown_surr);
 
             if let Some((
                 self_count,
                 mid_count,
                 other_count
             )) = solve_linear_constraints(
-                (self_excl.len(), common.len(), other_excl.len()),
+                (self_excl().count(), common().count(), other_excl().count()),
                 (self_unknown_mines, other_unknown_mines)
             ) {
-                for &(count, ref set) in [
-                    (self_count, self_excl),
-                    (mid_count, common),
-                    (other_count, other_excl)
-                ].into_iter() {
-                    let action_type = match count {
-                        0 => SingleCellAction::ServerClear,
-                        c if c == set.len() => SingleCellAction::Flag,
-                        _ => { continue; }
-                    };
-
-                    for &index in set.iter() {
-                        actions.push(Action::Single { index, action_type });
-                    }
-                }
+                try_mark_cell_set(self_count, self_excl(), actions);
+                try_mark_cell_set(mid_count, common(), actions);
+                try_mark_cell_set(other_count, other_excl(), actions);
             }
         }
     }
+}
+
+fn try_mark_cell_set<'a, I: Iterator<Item=&'a usize> + Clone>(
+    mine_count: usize,
+    set_iter: I,
+    actions: &mut ActionQueue
+) -> bool {
+    let action_type = match mine_count {
+        0 => SingleCellAction::ServerClear,
+        c if c == set_iter.clone().count() => SingleCellAction::Flag,
+        _ => { return false; }
+    };
+
+    for &index in set_iter {
+        actions.push(Action::Single { index, action_type });
+    }
+
+    return true;
 }
 
 fn solve_linear_constraints(
