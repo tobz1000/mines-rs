@@ -47,7 +47,7 @@ impl<D, M> GameBatch<D, M>
 
         for (dims, mines) in iproduct!(all_dims, mines_range) {
             let size = dims.iter().fold(1, |s, &d| s * d);
-            if size < mines { continue; }
+            if size <= mines { continue; }
 
             let wins = rng.gen_iter().take(count_per_spec)
                 .try_fold(0, |wins, seed| -> Result<usize, Box<Error>> {
