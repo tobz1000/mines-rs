@@ -21,7 +21,7 @@ pub mod req {
     #[derive(Serialize, Deserialize)]
     pub struct NewGameRequest<'a> {
         pub client: &'a str,
-        pub seed: Option<u64>,
+        pub seed: Option<u32>,
         pub dims: Vec<usize>,
         pub mines: usize,
         pub autoclear: bool,

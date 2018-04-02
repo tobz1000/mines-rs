@@ -30,7 +30,7 @@ impl<'a> JsonServerWrapper<'a> {
 	pub fn new_game(
 		dims: Vec<usize>,
 		mines: usize,
-		seed: Option<u64>,
+		seed: Option<u32>,
 		autoclear: bool,
 		event_loop_core: &'a mut reactor::Core
 	) -> Result<JsonServerWrapper<'a>, Box<Error>> {
