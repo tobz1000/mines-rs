@@ -2,14 +2,15 @@
 #![feature(conservative_impl_trait)]
 #![feature(vec_resize_default)]
 #![feature(iterator_try_fold)]
+#![feature(try_from)]
 
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate itertools;
 extern crate mersenne_twister;
 extern crate rand;
-
 extern crate serde_json;
 extern crate tokio_core;
+extern crate chrono;
 
 mod server;
 mod coords;
@@ -18,18 +19,21 @@ mod client;
 mod game_batch;
 mod util;
 
+use self::chrono::Utc;
 use game_batch::GameBatch;
 
 fn main() {
     let batch = GameBatch {
-        count_per_spec: 2000,
+        count_per_spec: 20,
         dims_range: vec![6..=6, 6..=6],
-        mines_range: 0..19,
+        mines_range: 0..10,
         autoclear: true,
         metaseed: 0xB16B0B5
     };
 
+    let start = Utc::now();
     let results = batch.clone().run().unwrap();
+    let game_count = results.len() * batch.count_per_spec;
 
     for ((dims, mines), wins) in results {
         let win_perc = wins as f64 * 100f64 / batch.count_per_spec as f64;
@@ -42,4 +46,11 @@ fn main() {
             win_perc
         );
     }
+
+    let stop = Utc::now();
+    let dur_us = stop.signed_duration_since(start).num_microseconds().unwrap();
+    let dur_s = dur_us as f64 / 1_000_000_f64;
+    let avg_us = dur_us / game_count as i64;
+
+    println!("Time: {:.2}s (avg {}µs/game)", dur_s, avg_us);
 }

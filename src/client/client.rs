@@ -95,6 +95,10 @@ impl<G: GameServer> Client<G> {
             }
         }
 
+        if actions.get_to_clear().next() == None {
+            actions.add_to_clear(self.guess_index());
+        }
+
         let next_actions = ServerActions {
             to_clear: actions.get_to_clear()
                 .map(|&i| Coords::from_index(i, &self.server.dims()))
@@ -105,5 +109,14 @@ impl<G: GameServer> Client<G> {
         };
 
         next_actions
+    }
+
+    fn guess_index(&self) -> usize {
+        let (i, _cell) = self.grid.iter()
+            .enumerate()
+            .find(|&(_i, cell)| !cell.is_marked())
+            .expect("Found no uncleared, unflagged cell to guess");
+
+        i
     }
 }

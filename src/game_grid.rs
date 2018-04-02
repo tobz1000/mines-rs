@@ -1,6 +1,7 @@
 use itertools::Itertools;
 
 use std::collections::HashSet;
+use std::convert::TryInto;
 use std::iter::repeat;
 use std::ops::{Index, IndexMut};
 
@@ -38,7 +39,11 @@ impl<C> GameGrid<C> {
             for coords in region_coords {
                 let index = Coords(coords.clone()).to_index(dims);
                 let surr = offsets.iter()
-                    .map(|&o| (index as isize + o) as usize)
+                    .map(|&o| {
+                        (index as isize + o)
+                            .try_into()
+                            .expect("Calculated negative cell index")
+                    })
                     .collect();
 
                 cells[index] = Some(get_cell(index, surr));
@@ -52,6 +57,10 @@ impl<C> GameGrid<C> {
         let (a, b) = index_pair(self.0.as_mut_slice(), ia, ib);
 
         (a.as_mut().unwrap(), b.as_mut().unwrap())
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item=&C> {
+        self.0.iter().map(|c| c.as_ref().unwrap())
     }
 }
 

@@ -27,6 +27,14 @@ pub enum Cell {
     Ongoing(OngoingCell),
     Complete,
 }
+#[derive(Clone, Debug)]
+pub struct OngoingCell {
+    index: usize,
+    unknown_surr: HashSet<usize>,
+    total_surr: HashSet<usize>,
+    total_surr_mines: Option<usize>,
+    known_surr_mines: usize,
+}
 
 impl Cell {
     pub fn new(index: usize, surr_indices: HashSet<usize>) -> Self {
@@ -38,15 +46,15 @@ impl Cell {
             known_surr_mines: 0,
         })
     }
-}
 
-#[derive(Clone, Debug)]
-pub struct OngoingCell {
-    index: usize,
-    unknown_surr: HashSet<usize>,
-    total_surr: HashSet<usize>,
-    total_surr_mines: Option<usize>,
-    known_surr_mines: usize,
+    // Whether this cell has been cleared/flagged. Doesn't check for
+    // to-be-cleared cells.
+    pub fn is_marked(&self) -> bool {
+        match self {
+            &Cell::Ongoing(OngoingCell { total_surr_mines: None, .. }) => false,
+            _ => true
+        }
+    }
 }
 
 impl OngoingCell {
