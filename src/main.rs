@@ -6,6 +6,7 @@
 
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate itertools;
+#[macro_use] extern crate bson;
 extern crate mersenne_twister;
 extern crate rand;
 extern crate serde_json;

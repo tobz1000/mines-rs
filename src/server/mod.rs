@@ -1,6 +1,7 @@
 mod json_api;
 mod json_server_wrapper;
 mod native_server;
+mod db;
 
 pub use self::json_server_wrapper::JsonServerWrapper;
 pub use self::native_server::NativeServer;
@@ -33,6 +34,6 @@ pub trait GameServer {
 #[derive(Debug)]
 pub struct CellInfo {
 	pub coords: Coords,
-	pub mine: bool,	
+	pub mine: bool,
 	pub surrounding: usize,
 }

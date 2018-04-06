@@ -13,6 +13,7 @@ use self::mersenne_twister::MT19937;
 
 use coords::Coords;
 use server::{GameServer, GameState, CellInfo};
+use server::db;
 use game_grid::GameGrid;
 
 #[derive(Debug)]
@@ -58,6 +59,49 @@ struct TurnInfo {
     unflagged: Vec<usize>,
     cells_rem: usize,
     game_state: GameState,
+}
+
+impl TurnInfo {
+    fn to_document(&self, server: &NativeServer) -> db::Turn {
+        let to_coords_vec = |indices: &[usize]| {
+            indices.iter()
+                .map(|&i| Coords::from_index(i, &server.dims))
+                .collect()
+        };
+
+        let clear_actual = self.clear_actual.iter()
+            .map(|&i| {
+                let &Cell {
+                    mine,
+                    surr_mine_count,
+                    ..
+                } = &server.grid[i];
+
+                let state = if mine {
+                    db::CellState::Mine
+                } else {
+                    db::CellState::Cleared
+                };
+
+                db::CellInfo {
+                    surrounding: surr_mine_count,
+                    state,
+                    coords: Coords::from_index(i, &server.dims)
+                }
+            })
+            .collect();
+
+        db::Turn {
+            turn_taken_at: self.timestamp.clone(),
+            clear_req: to_coords_vec(&self.clear_req),
+            clear_actual,
+            flagged: to_coords_vec(&self.flagged),
+            unflagged: to_coords_vec(&self.unflagged),
+            game_over: self.game_state != GameState::Ongoing,
+            win: self.game_state == GameState::Win,
+            cells_rem: self.cells_rem
+        }
+    }
 }
 
 pub struct NativeServer {
@@ -184,6 +228,49 @@ impl NativeServer {
         let row_count = *self.dims.get(1).unwrap_or(&1);
 
         Ok((0..row_count).map(row_repr).join("\n"))
+    }
+
+    pub fn to_document(&self) -> db::Game {
+        let &NativeServer {
+            created_at,
+            ref dims,
+            ref grid,
+            mines,
+            seed,
+            autoclear,
+            cells_rem,
+            game_state,
+            ref turns
+        } = self;
+
+        let cell_array = grid.iter().map(|&Cell { mine, action, .. }| {
+            match (mine, action) {
+                (true, _) => db::CellState::Mine,
+                (false, CellAction::Cleared) => db::CellState::Cleared,
+                (false, _) => db::CellState::Empty
+            }
+        }).collect();
+
+        let flag_array = grid.iter()
+            .map(|cell| cell.action == CellAction::Flagged)
+            .collect();
+
+        let turns = turns.iter().map(|turn| turn.to_document(self)).collect();
+
+        db::Game {
+            id: None,
+            created_at,
+            pass: None,
+            seed,
+            dims: dims.clone(),
+            size: dims.iter().fold(1, |acc, &d| acc * d),
+            mines,
+            autoclear,
+            turns,
+            clients: vec!["RustoBusto".to_owned()],
+            cell_array,
+            flag_array
+        }
     }
 
     fn clear_cells(&mut self, mut to_clear: Vec<usize>) -> Vec<usize> {
