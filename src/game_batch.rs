@@ -65,7 +65,7 @@ impl<D, M> GameBatch<D, M>
         }
 
         Ok(ret)
-    } 
+    }
 
     fn single_game(
         dims: Vec<usize>,

@@ -135,7 +135,7 @@ impl NativeServer {
         }
 
         let seed = if let Some(seed) = user_seed {
-            seed    
+            seed
         } else {
             thread_rng().gen()
         };

@@ -29,7 +29,7 @@ impl<C> GameGrid<C> {
         let cell_regions = repeat(
             [DimReg::Start, DimReg::Mid, DimReg::End].iter().map(Clone::clone)
         ).take(dims.len()).multi_cartesian_product();
-        
+
         for cell_region in cell_regions {
             let offsets = region_offsets(&cell_region, dims);
             let region_coords = cell_region.iter().zip(dims.iter())
