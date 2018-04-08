@@ -49,7 +49,7 @@ fn main() {
     }
 
     let stop = Utc::now();
-    let dur_us = stop.signed_duration_since(start).num_microseconds().unwrap();
+    let dur_us = (stop - start).num_microseconds().unwrap();
     let dur_s = dur_us as f64 / 1_000_000_f64;
     let avg_us = dur_us / game_count as i64;
 
