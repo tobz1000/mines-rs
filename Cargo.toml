@@ -15,5 +15,5 @@ itertools = "*"
 futures-await = "*"
 rand = "*"
 mersenne_twister = "*"
-wither = "*"
-bson = "*"
+wither = { path = "../../wither" } # wither with bson version locked at 0.10.0 to match mongodb, used by wither (!)
+bson = "0.10.0" # fixed to match mongodb, used by wither
