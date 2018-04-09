@@ -393,7 +393,7 @@ impl GameServer for NativeServer {
             // Intended to only save once - doc model is discarded, so _id is
             // not persisted.
             if self.game_state != GameState::Ongoing {
-                self.to_document().save(db_connection.clone(), None).unwrap();
+                self.to_document().save(db_connection.clone(), None)?;
             }
         }
 

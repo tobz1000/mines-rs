@@ -36,7 +36,7 @@ impl<D, M> GameBatch<D, M>
         Box<Error>
     > {
         let database_connection = {
-            let client = mongodb::ThreadedClient::connect("localhost", 27017).unwrap();
+            let client = mongodb::ThreadedClient::connect("localhost", 27017)?;
             Database::open(client, "test", None, None)
         };
 
@@ -64,10 +64,10 @@ impl<D, M> GameBatch<D, M>
                         seed,
                         autoclear,
                         database_connection.clone()
-                    ).unwrap() == GameState::Win;
+                    )? == GameState::Win;
 
                     Ok(if win { wins + 1 } else { wins })
-                }).unwrap();
+                })?;
 
             ret.push(((dims, mines), wins));
         }
