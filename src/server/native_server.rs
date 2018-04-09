@@ -204,6 +204,7 @@ impl NativeServer {
         server
     }
 
+    #[allow(dead_code)]
     pub fn grid_repr(&self) -> Result<String, GameError> {
         if self.dims.len() > 2 {
             return Err(GameError(format!(
