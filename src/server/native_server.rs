@@ -2,6 +2,8 @@ extern crate rand;
 extern crate chrono;
 extern crate itertools;
 extern crate mersenne_twister;
+extern crate mongodb;
+extern crate wither;
 
 use std::fmt;
 use std::error::Error;
@@ -10,6 +12,8 @@ use self::rand::{Rng, thread_rng, SeedableRng};
 use self::chrono::{DateTime, Utc};
 use self::itertools::Itertools;
 use self::mersenne_twister::MT19937;
+use self::mongodb::db::Database;
+use self::wither::Model;
 
 use coords::Coords;
 use server::{GameServer, GameState, CellInfo};
@@ -114,6 +118,7 @@ pub struct NativeServer {
     cells_rem: usize,
     game_state: GameState,
     turns: Vec<TurnInfo>,
+    db_connection: Option<Database>,
 }
 
 impl NativeServer {
@@ -122,6 +127,7 @@ impl NativeServer {
         mines: usize,
         user_seed: Option<u32>,
         autoclear: bool,
+        db_connection: Option<Database>
     ) -> Self {
         let size = dims.iter().fold(1, |s, &i| s * i);
 
@@ -185,11 +191,15 @@ impl NativeServer {
             grid,
             cells_rem: size - mines,
             game_state: GameState::Ongoing,
-            turns: Vec::new()
+            turns: Vec::new(),
+            db_connection
         };
-        let first_turn = server.turn_info(vec![], vec![], vec![], vec![]);
 
-        server.turns.push(first_turn);
+        if let Some(_) = server.db_connection {
+            let first_turn = server.turn_info(vec![], vec![], vec![], vec![]);
+
+            server.turns.push(first_turn);
+        }
 
         server
     }
@@ -230,7 +240,7 @@ impl NativeServer {
         Ok((0..row_count).map(row_repr).join("\n"))
     }
 
-    pub fn to_document(&self) -> db::Game {
+    fn to_document(&self) -> db::Game {
         let &NativeServer {
             created_at,
             ref dims,
@@ -238,9 +248,8 @@ impl NativeServer {
             mines,
             seed,
             autoclear,
-            cells_rem,
-            game_state,
-            ref turns
+            ref turns,
+            ..
         } = self;
 
         let cell_array = grid.iter().map(|&Cell { mine, action, .. }| {
@@ -370,14 +379,22 @@ impl GameServer for NativeServer {
         let flag_actual = self.set_flags(flag, CellAction::Flagged);
         let unflag_actual = self.set_flags(unflag, CellAction::NoAction);
 
-        let turn_info = self.turn_info(
-            clear_req_indices,
-            clear_actual.clone(),
-            flag_actual,
-            unflag_actual
-        );
+        if let Some(ref db_connection) = self.db_connection {
+            let turn_info = self.turn_info(
+                clear_req_indices,
+                clear_actual.clone(),
+                flag_actual,
+                unflag_actual
+            );
 
-        self.turns.push(turn_info);
+            self.turns.push(turn_info);
+
+            // Intended to only save once - doc model is discarded, so _id is
+            // not persisted.
+            if self.game_state != GameState::Ongoing {
+                self.to_document().save(db_connection.clone(), None).unwrap();
+            }
+        }
 
         let client_cell_info = clear_actual.iter()
             .map(|&index| self.client_cell_info(index))

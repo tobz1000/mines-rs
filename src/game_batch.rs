@@ -1,11 +1,13 @@
 extern crate rand;
 extern crate mersenne_twister;
 extern crate itertools;
+extern crate mongodb;
 
 use std::error::Error;
 use self::rand::{Rng, SeedableRng};
 use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
+use self::mongodb::db::{Database, ThreadedDatabase};
 use server::{NativeServer, GameState};
 use client::Client;
 
@@ -33,6 +35,11 @@ impl<D, M> GameBatch<D, M>
         Vec<((Vec<usize>, usize), usize)>,
         Box<Error>
     > {
+        let database_connection = {
+            let client = mongodb::ThreadedClient::connect("localhost", 27017).unwrap();
+            Database::open(client, "test", None, None)
+        };
+
         let GameBatch {
             count_per_spec,
             dims_range,
@@ -55,7 +62,8 @@ impl<D, M> GameBatch<D, M>
                         dims.clone(),
                         mines,
                         seed,
-                        autoclear
+                        autoclear,
+                        database_connection.clone()
                     ).unwrap() == GameState::Win;
 
                     Ok(if win { wins + 1 } else { wins })
@@ -72,8 +80,16 @@ impl<D, M> GameBatch<D, M>
         mines: usize,
         seed: u32,
         autoclear: bool,
+        db_connection: Database
     ) -> Result<GameState, Box<Error>> {
-        let server = NativeServer::new(dims, mines, Some(seed), autoclear);
+        let server = NativeServer::new(
+            dims,
+            mines,
+            Some(seed),
+            autoclear,
+            Some(db_connection)
+        );
+
         let mut client = Client::new(server);
 
         client.play()
