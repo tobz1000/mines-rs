@@ -160,8 +160,6 @@ impl OngoingCell {
     }
 
     fn try_complete(&mut self, actions: &mut ActionQueue) -> bool {
-        use self::SingleCellAction::*;
-
         if let Some(unknown_surr_mines) = self.unknown_surr_mines() {
             if try_mark_cell_set(
                 unknown_surr_mines,
