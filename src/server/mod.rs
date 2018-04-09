@@ -18,7 +18,7 @@ pub trait GameServer {
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
 		unflag: Vec<Coords>,
-	) -> Result<(), Box<Error>>;
+	) -> Result<Vec<CellInfo>, Box<Error>>;
 
 	fn dims(&self) -> &[usize];
 
@@ -27,8 +27,6 @@ pub trait GameServer {
 	fn game_state(&self) -> GameState;
 
 	fn cells_rem(&self) -> usize;
-
-	fn clear_actual(&self) -> Vec<CellInfo>;
 }
 
 #[derive(Debug)]

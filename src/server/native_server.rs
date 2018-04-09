@@ -357,7 +357,7 @@ impl GameServer for NativeServer {
         clear: Vec<Coords>,
         flag: Vec<Coords>,
         unflag: Vec<Coords>,
-    ) -> Result<(), Box<Error>> {
+    ) -> Result<Vec<CellInfo>, Box<Error>> {
         if self.game_state != GameState::Ongoing {
             return Err(GameError(String::from("Game already finished")))?;
         }
@@ -372,14 +372,18 @@ impl GameServer for NativeServer {
 
         let turn_info = self.turn_info(
             clear_req_indices,
-            clear_actual,
+            clear_actual.clone(),
             flag_actual,
             unflag_actual
         );
 
         self.turns.push(turn_info);
 
-        Ok(())
+        let client_cell_info = clear_actual.iter()
+            .map(|&index| self.client_cell_info(index))
+            .collect();
+
+        Ok(client_cell_info)
     }
 
 	fn dims(&self) -> &[usize] { &self.dims }
@@ -389,10 +393,4 @@ impl GameServer for NativeServer {
 	fn game_state(&self) -> GameState { self.game_state }
 
 	fn cells_rem(&self) -> usize { self.cells_rem }
-
-	fn clear_actual(&self) -> Vec<CellInfo> {
-        self.turns.last().unwrap().clear_actual.iter()
-            .map(|&index| self.client_cell_info(index))
-            .collect()
-    }
 }

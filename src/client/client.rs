@@ -32,11 +32,11 @@ impl<G: GameServer> Client<G> {
         let mut to_flag = vec![];
 
         while !(to_clear.is_empty() && to_flag.is_empty()) {
-            self.server.turn(to_clear, to_flag, vec![])?;
+            let clear_actual = self.server.turn(to_clear, to_flag, vec![])?;
 
             if self.server.game_state() != GameState::Ongoing { break; }
 
-            let next_actions = self.next_turn();
+            let next_actions = self.next_turn(&clear_actual);
 
             to_clear = next_actions.to_clear;
             to_flag = next_actions.to_flag;
@@ -45,14 +45,14 @@ impl<G: GameServer> Client<G> {
         Ok(self.server.game_state())
     }
 
-    fn next_turn(&mut self) -> ServerActions {
+    fn next_turn(&mut self, clear_actual: &[CellInfo]) -> ServerActions {
         let mut actions = ActionQueue::new();
 
         for &CellInfo {
             ref coords,
             surrounding,
             mine,
-        } in self.server.clear_actual().iter() {
+        } in clear_actual.iter() {
             let index = coords.to_index(&self.server.dims());
             let action_type = if mine {
                 SingleCellAction::Flag

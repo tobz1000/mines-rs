@@ -123,8 +123,22 @@ impl<'a> GameServer for JsonServerWrapper<'a> {
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
 		unflag: Vec<Coords>,
-	) -> Result<(), Box<Error>> {
-		self.turn(clear, flag, unflag)
+	) -> Result<Vec<NativeCellInfo>, Box<Error>> {
+		self.turn(clear, flag, unflag)?;
+
+		let clear_actual_native = self.status.clear_actual.iter()
+			.map(|&JsonCellInfo {
+				surrounding,
+				state,
+				ref coords
+			}| NativeCellInfo {
+				coords: coords.clone(),
+				mine: state == CellState::Mine,
+				surrounding
+			})
+			.collect();
+
+		Ok(clear_actual_native)
 	}
 
 	fn dims(&self) -> &[usize] { &self.status.dims }
@@ -144,18 +158,4 @@ impl<'a> GameServer for JsonServerWrapper<'a> {
 	}
 
 	fn cells_rem(&self) -> usize { self.status.cells_rem }
-
-	fn clear_actual(&self) -> Vec<NativeCellInfo> {
-		self.status.clear_actual.iter()
-			.map(|&JsonCellInfo {
-				surrounding,
-				state,
-				ref coords
-			}| NativeCellInfo {
-				coords: coords.clone(),
-				mine: state == CellState::Mine,
-				surrounding
-			})
-			.collect()
-	}
 }
