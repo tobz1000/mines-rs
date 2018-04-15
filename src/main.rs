@@ -1,5 +1,3 @@
-#![feature(inclusive_range_syntax)]
-#![feature(conservative_impl_trait)]
 #![feature(vec_resize_default)]
 #![feature(iterator_try_fold)]
 #![feature(try_from)]
