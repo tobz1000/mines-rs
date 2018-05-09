@@ -67,7 +67,7 @@ struct TurnInfo {
 
 impl TurnInfo {
     fn to_document(&self, server: &NativeServer) -> db::Turn {
-        let to_coords_vec = |indices: &[usize]| {
+        let to_coords_vec = |indices: &[usize]| -> Vec<Coords<i32>> {
             indices.iter()
                 .map(|&i| Coords::from_index(i, &server.dims))
                 .collect()
@@ -103,7 +103,7 @@ impl TurnInfo {
             unflagged: to_coords_vec(&self.unflagged),
             game_over: self.game_state != GameState::Ongoing,
             win: self.game_state == GameState::Win,
-            cells_rem: self.cells_rem
+            cells_rem: self.cells_rem as i32
         }
     }
 }
@@ -271,10 +271,10 @@ impl NativeServer {
             id: None,
             created_at,
             pass: None,
-            seed,
-            dims: dims.clone(),
-            size: dims.iter().fold(1, |acc, &d| acc * d),
-            mines,
+            seed: seed as i32,
+            dims: dims.iter().map(|&d| d as i32).collect(),
+            size: dims.iter().fold(1, |acc, &d| acc * d) as i32,
+            mines: mines as i32,
             autoclear,
             turns,
             clients: vec!["RustoBusto".to_owned()],
