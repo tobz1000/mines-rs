@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Coords<T = usize>(pub Vec<T>);
 
-impl<T> Coords<T>
+impl<T: Copy> Coords<T>
     where T: TryFrom<usize> + TryInto<usize>,
           <T as TryFrom<usize>>::Error: fmt::Debug,
           <T as TryInto<usize>>::Error: fmt::Debug,

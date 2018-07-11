@@ -21,10 +21,10 @@ pub struct GameBatch<D, M> {
 }
 
 pub struct SpecResult {
-    dims: Vec<usize>,
-    mines: usize,
-    played: usize,
-    wins: usize
+    pub dims: Vec<usize>,
+    pub mines: usize,
+    pub played: usize,
+    pub wins: usize
 }
 
 struct Spec {
@@ -65,10 +65,12 @@ impl<D, M> GameBatch<D, M>
           M: IntoIterator<Item=usize>,
           <M as IntoIterator>::IntoIter: Clone,
 {
+    #[allow(dead_code)]
     pub fn run_json_server(self) -> Result<Vec<SpecResult>, Box<dyn Error>> {
         self.run(new_json_server_game)
     }
 
+    #[allow(dead_code)]
     pub fn run_native(self) -> Result<Vec<SpecResult>, Box<dyn Error>> {
         self.run(new_native_game)
     }
@@ -77,11 +79,6 @@ impl<D, M> GameBatch<D, M>
         where G: GameServer,
               F: Fn(Spec) -> Result<G, Box<dyn Error>>,
     {
-        let database_connection = {
-            let client = mongodb::ThreadedClient::connect("localhost", 27017)?;
-            Database::open(client, "test", None, None)
-        };
-
         let GameBatch {
             count_per_spec,
             dims_range,
@@ -100,37 +97,27 @@ impl<D, M> GameBatch<D, M>
 
             let wins = rng.gen_iter().take(count_per_spec)
                 .try_fold(0, |wins, seed| -> Result<usize, Box<Error>> {
-                    let spec = Spec { dims, mines, seed, autoclear };
-                    let game = new_game(Spec { dims, mines, seed, autoclear })?;
+                    let game = new_game(Spec {
+                        dims: dims.clone(),
+                        mines,
+                        seed,
+                        autoclear
+                    })?;
+
                     let mut client = Client::new(game);
                     let win = client.play()? == GameState::Win;
 
                     Ok(if win { wins + 1 } else { wins })
                 })?;
 
-            ret.push(SpecResult { dims, mines, played: count_per_spec, wins });
+            ret.push(SpecResult {
+                dims: dims.clone(),
+                mines,
+                played: count_per_spec,
+                wins
+            });
         }
 
         Ok(ret)
-    }
-
-    fn single_game(
-        dims: Vec<usize>,
-        mines: usize,
-        seed: u32,
-        autoclear: bool,
-        db_connection: Database
-    ) -> Result<GameState, Box<Error>> {
-        let server = NativeServer::new(
-            dims,
-            mines,
-            Some(seed),
-            autoclear,
-            Some(db_connection)
-        );
-
-        let mut client = Client::new(server);
-
-        client.play()
     }
 }
