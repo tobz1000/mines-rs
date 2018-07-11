@@ -1,5 +1,3 @@
-extern crate tokio_core;
-
 use std::error::Error;
 use coords::Coords;
 use client::cell::{Cell, Action, SingleCellAction};

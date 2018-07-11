@@ -1,41 +1,33 @@
-extern crate tokio_core;
-extern crate hyper;
+extern crate hyper_sync;
 extern crate serde;
 extern crate serde_json;
-extern crate futures_await as futures;
 
 use std::error::Error;
-use std::io;
 use std::str;
 use coords::Coords;
 use server::{GameServer, GameState, CellInfo as NativeCellInfo};
 use server::json_api::req::{JsonServerRequest, TurnRequest, NewGameRequest};
 use server::json_api::resp::{ServerResponse, CellState, CellInfo as JsonCellInfo};
-use self::tokio_core::reactor;
-use self::futures::{Future, Stream};
-use self::hyper::Method;
-use self::hyper::client::{Client, HttpConnector, Request};
-use self::hyper::header::{ContentLength, ContentType};
+use self::hyper_sync::Client;
+use self::hyper_sync::header::{ContentLength, ContentType};
 use self::serde::ser::Serialize;
 
-pub struct JsonServerWrapper<'a> {
+pub struct JsonServerWrapper {
 	client_name: String,
 	status: ServerResponse,
 	base_url: String,
-	http_client: Client<HttpConnector>,
-	event_loop_core: &'a mut reactor::Core
+	http_client: Client,
 }
 
-impl<'a> JsonServerWrapper<'a> {
+impl JsonServerWrapper {
 	pub fn new_game(
 		dims: Vec<usize>,
 		mines: usize,
 		seed: Option<u32>,
 		autoclear: bool,
-		event_loop_core: &'a mut reactor::Core
-	) -> Result<JsonServerWrapper<'a>, Box<Error>> {
+	) -> Result<JsonServerWrapper, Box<Error>> {
 		let client_name = "RustyBoi";
-		let http_client = Client::new(&event_loop_core.handle());
+		let http_client = Client::new();
 		let base_url = "http://localhost:1066/server";
 
 		let status = Self::_action(
@@ -48,7 +40,6 @@ impl<'a> JsonServerWrapper<'a> {
 				autoclear,
 			},
 			&http_client,
-			event_loop_core,
 		)?;
 
 		Ok(JsonServerWrapper {
@@ -56,7 +47,6 @@ impl<'a> JsonServerWrapper<'a> {
 			client_name: client_name.to_owned(),
 			status,
 			http_client,
-			event_loop_core
 		})
 	}
 
@@ -68,7 +58,6 @@ impl<'a> JsonServerWrapper<'a> {
 			&self.base_url,
 			&request,
 			&self.http_client,
-			self.event_loop_core,
 		)?;
 
 		Ok(())
@@ -77,26 +66,20 @@ impl<'a> JsonServerWrapper<'a> {
 	fn _action<R: JsonServerRequest + Serialize>(
 		base_url: &str,
 		request: &R,
-		http_client: &Client<HttpConnector>,
-		event_loop_core: &mut reactor::Core,
-	) -> Result<ServerResponse, Box<Error>> {
-		let post_url = format!("{}/{}", base_url, R::ACTION).parse()?;
+		http_client: &Client,
+	) -> Result<ServerResponse, Box<dyn Error>> {
+		let post_url = format!("{}/{}", base_url, R::ACTION);
 		let req_json = serde_json::to_string(&request)?;
 
-		let mut http_req = Request::new(Method::Post, post_url);
-		http_req.headers_mut().set(ContentType::json());
-		http_req.headers_mut().set(ContentLength(req_json.len() as u64));
-		http_req.set_body(req_json);
+		let http_req = http_client.post(&post_url)
+			.header(ContentType::json())
+			.header(ContentLength(req_json.len() as u64))
+			.body(&req_json);
 
-		let server_resp_fut = http_client.request(http_req).and_then(|resp| {
-			resp.body().concat2().and_then(|body| {
-				Ok(serde_json::from_slice(&body).map_err(|e| {
-					io::Error::new(io::ErrorKind::InvalidData, e)
-				})?)
-			})
-		});
+		let resp_buffer = http_req.send()?;
 
-		Ok(event_loop_core.run(server_resp_fut)?)
+		let resp: ServerResponse = serde_json::from_reader(resp_buffer)?;
+		Ok(resp)
 	}
 
 	fn turn(
@@ -117,7 +100,7 @@ impl<'a> JsonServerWrapper<'a> {
 	}
 }
 
-impl<'a> GameServer for JsonServerWrapper<'a> {
+impl<'a> GameServer for JsonServerWrapper {
 	fn turn(
 		&mut self,
 		clear: Vec<Coords>,

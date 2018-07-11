@@ -4,11 +4,7 @@
 
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate itertools;
-extern crate bson;
-extern crate mersenne_twister;
-extern crate rand;
-extern crate serde_json;
-extern crate tokio_core;
+#[macro_use] extern crate lazy_static;
 extern crate chrono;
 
 mod server;
@@ -19,7 +15,7 @@ mod game_batch;
 mod util;
 
 use self::chrono::Utc;
-use game_batch::GameBatch;
+use game_batch::{GameBatch, SpecResult};
 
 fn main() {
     let batch = GameBatch {
@@ -31,10 +27,10 @@ fn main() {
     };
 
     let start = Utc::now();
-    let results = batch.clone().run().unwrap();
+    let results = batch.clone().run_native().unwrap();
     let game_count = results.len() * batch.count_per_spec;
 
-    for ((dims, mines), wins) in results {
+    for SpecResult { dims, mines, wins, .. } in results {
         let win_perc = wins as f64 * 100f64 / batch.count_per_spec as f64;
         println!(
             "{:?}\t{}:\t{}/{}\t({:.0}%)",
