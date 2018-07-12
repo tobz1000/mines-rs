@@ -7,6 +7,8 @@
 #[macro_use] extern crate lazy_static;
 extern crate chrono;
 
+#[cfg(test)] #[macro_use] extern crate quickcheck;
+
 mod server;
 mod coords;
 mod game_grid;
