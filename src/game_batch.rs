@@ -4,6 +4,7 @@ extern crate itertools;
 extern crate mongodb;
 
 use std::error::Error;
+use std::iter::repeat;
 use self::rand::{Rng, SeedableRng};
 use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
@@ -27,11 +28,18 @@ pub struct SpecResult {
     pub wins: usize
 }
 
-struct Spec {
+struct GameSpec {
     dims: Vec<usize>,
     mines: usize,
     seed: u32,
     autoclear: bool,
+}
+
+#[derive(Clone)]
+struct GridSpec {
+    spec_index: usize,
+    dims: Vec<usize>,
+    mines: usize
 }
 
 lazy_static! {
@@ -41,8 +49,8 @@ lazy_static! {
     };
 }
 
-fn new_native_game(spec: Spec) -> Result<NativeServer, Box<Error>> {
-    let Spec { dims, mines, seed, autoclear } = spec;
+fn new_native_game(spec: GameSpec) -> Result<NativeServer, Box<Error>> {
+    let GameSpec { dims, mines, seed, autoclear } = spec;
 
     Ok(NativeServer::new(
         dims,
@@ -53,10 +61,34 @@ fn new_native_game(spec: Spec) -> Result<NativeServer, Box<Error>> {
     ))
 }
 
-fn new_json_server_game(spec: Spec) -> Result<JsonServerWrapper, Box<Error>> {
-    let Spec { dims, mines, seed, autoclear } = spec;
+fn new_json_server_game(spec: GameSpec) -> Result<JsonServerWrapper, Box<Error>> {
+    let GameSpec { dims, mines, seed, autoclear } = spec;
 
     JsonServerWrapper::new_game(dims, mines, Some(seed), autoclear)
+}
+
+struct GameSpecs<G, R>
+    where G: Iterator<Item=GridSpec>,
+          R: Rng
+{
+    grid_specs: G,
+    autoclear: bool,
+    rng: R,
+}
+
+impl<G, R> Iterator for GameSpecs<G, R>
+    where G: Iterator<Item=GridSpec>,
+          R: Rng
+{
+    type Item = (usize, GameSpec);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let GameSpecs { grid_specs, autoclear, rng } = self;
+        let GridSpec { spec_index, dims, mines } = grid_specs.next()?;
+        let seed = rng.next_u32();
+
+        Some((spec_index, GameSpec { dims, mines, seed, autoclear: *autoclear }))
+    }
 }
 
 impl<D, M> GameBatch<D, M>
@@ -75,10 +107,7 @@ impl<D, M> GameBatch<D, M>
         self.run(new_native_game)
     }
 
-    fn run<F, G>(self, new_game: F) -> Result<Vec<SpecResult>, Box<dyn Error>>
-        where G: GameServer,
-              F: Fn(Spec) -> Result<G, Box<dyn Error>>,
-    {
+    fn game_specs(self) -> GameSpecs<impl Iterator<Item=GridSpec>, MT19937> {
         let GameBatch {
             count_per_spec,
             dims_range,
@@ -87,37 +116,50 @@ impl<D, M> GameBatch<D, M>
             metaseed
         } = self;
 
-        let mut ret = Vec::new();
-        let mut rng: MT19937 = SeedableRng::from_seed(metaseed);
         let all_dims = dims_range.into_iter().multi_cartesian_product();
 
-        for (dims, mines) in iproduct!(all_dims, mines_range) {
-            let size = dims.iter().fold(1, |s, &d| s * d);
-            if size <= mines { continue; }
-
-            let wins = rng.gen_iter().take(count_per_spec)
-                .try_fold(0, |wins, seed| -> Result<usize, Box<Error>> {
-                    let game = new_game(Spec {
-                        dims: dims.clone(),
-                        mines,
-                        seed,
-                        autoclear
-                    })?;
-
-                    let mut client = Client::new(game);
-                    let win = client.play()? == GameState::Win;
-
-                    Ok(if win { wins + 1 } else { wins })
-                })?;
-
-            ret.push(SpecResult {
-                dims: dims.clone(),
-                mines,
-                played: count_per_spec,
-                wins
+        let grid_specs = iproduct!(all_dims, mines_range)
+            .filter(|(dims, mines)| {
+                let size = dims.iter().fold(1, |s, &d| s * d);
+                size > *mines
+            })
+            .enumerate()
+            .flat_map(move |(spec_index, (dims, mines))| {
+                repeat(GridSpec { spec_index, dims, mines })
+                    .take(count_per_spec)
             });
+
+        let rng: MT19937 = SeedableRng::from_seed(metaseed);
+
+        GameSpecs { grid_specs, autoclear, rng }
+    }
+
+    fn run<F, G>(self, new_game: F) -> Result<Vec<SpecResult>, Box<dyn Error>>
+        where G: GameServer,
+              F: Fn(GameSpec) -> Result<G, Box<dyn Error>>,
+    {
+        let mut results = Vec::new();
+
+        for (i, spec) in self.game_specs() {
+            while i >= results.len() {
+                results.push(SpecResult {
+                    dims: spec.dims.clone(),
+                    mines: spec.mines,
+                    played: 0,
+                    wins: 0
+                })
+            }
+
+            let game = new_game(spec)?;
+            let mut client = Client::new(game);
+            let win = client.play()? == GameState::Win;
+
+            results[i].played += 1;
+            if win {
+                results[i].wins += 1;
+            }
         }
 
-        Ok(ret)
+        Ok(results)
     }
 }
