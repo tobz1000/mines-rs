@@ -21,9 +21,9 @@ use game_batch::{GameBatch, SpecResult};
 
 fn main() {
     let batch = GameBatch {
-        count_per_spec: 20,
-        dims_range: vec![6..=6, 6..=6],
-        mines_range: 0..10,
+        count_per_spec: 100,
+        dims_range: vec![20..=20, 20..=20],
+        mines_range: (0..=100).step_by(10),
         autoclear: true,
         metaseed: 0xB16B0B5
     };
