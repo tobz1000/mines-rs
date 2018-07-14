@@ -2,12 +2,12 @@ extern crate hyper_sync;
 extern crate serde;
 extern crate serde_json;
 
-use std::error::Error;
 use std::str;
 use coords::Coords;
 use server::{GameServer, GameState, CellInfo as NativeCellInfo};
 use server::json_api::req::{JsonServerRequest, TurnRequest, NewGameRequest};
 use server::json_api::resp::{ServerResponse, CellState, CellInfo as JsonCellInfo};
+use ::GameError;
 use self::hyper_sync::Client;
 use self::hyper_sync::header::{ContentLength, ContentType};
 use self::serde::ser::Serialize;
@@ -25,7 +25,7 @@ impl JsonServerWrapper {
 		mines: usize,
 		seed: Option<u32>,
 		autoclear: bool,
-	) -> Result<JsonServerWrapper, Box<Error>> {
+	) -> Result<JsonServerWrapper, GameError> {
 		let client_name = "RustyBoi";
 		let http_client = Client::new();
 		let base_url = "http://localhost:1066/server";
@@ -53,7 +53,7 @@ impl JsonServerWrapper {
 	fn action<R: JsonServerRequest + Serialize>(
 		&mut self,
 		request: R,
-	) -> Result<(), Box<Error>> {
+	) -> Result<(), GameError> {
 		self.status = Self::_action(
 			&self.base_url,
 			&request,
@@ -67,7 +67,7 @@ impl JsonServerWrapper {
 		base_url: &str,
 		request: &R,
 		http_client: &Client,
-	) -> Result<ServerResponse, Box<dyn Error>> {
+	) -> Result<ServerResponse, GameError> {
 		let post_url = format!("{}/{}", base_url, R::ACTION);
 		let req_json = serde_json::to_string(&request)?;
 
@@ -87,7 +87,7 @@ impl JsonServerWrapper {
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
 		unflag: Vec<Coords>
-	) -> Result<(), Box<Error>> {
+	) -> Result<(), GameError> {
 		let req = TurnRequest {
 			id: &self.status.id.clone(),
 			client: &self.client_name.clone(),
@@ -106,7 +106,7 @@ impl<'a> GameServer for JsonServerWrapper {
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
 		unflag: Vec<Coords>,
-	) -> Result<Vec<NativeCellInfo>, Box<Error>> {
+	) -> Result<Vec<NativeCellInfo>, GameError> {
 		self.turn(clear, flag, unflag)?;
 
 		let clear_actual_native = self.status.clear_actual.iter()

@@ -4,10 +4,8 @@ extern crate itertools;
 extern crate mersenne_twister;
 extern crate mongodb;
 extern crate wither;
-
-use std::fmt;
-use std::error::Error;
 use std::collections::HashSet;
+use ::GameError;
 use self::rand::{Rng, thread_rng, SeedableRng};
 use self::chrono::{DateTime, Utc};
 use self::itertools::Itertools;
@@ -19,19 +17,6 @@ use coords::Coords;
 use server::{GameServer, GameState, CellInfo};
 use server::db;
 use game_grid::GameGrid;
-
-#[derive(Debug)]
-pub struct GameError(String);
-
-impl Error for GameError {
-    fn description(&self) -> &str { &self.0 }
-}
-
-impl fmt::Display for GameError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum CellAction { NoAction, Flagged, Cleared }
@@ -205,12 +190,12 @@ impl NativeServer {
     }
 
     #[allow(dead_code)]
-    pub fn grid_repr(&self) -> Result<String, GameError> {
+    pub fn grid_repr(&self) -> Result<String, String> {
         if self.dims.len() > 2 {
-            return Err(GameError(format!(
+            return Err(format!(
                 "Can only repr game of <= 2 dimensions; dims={:?}",
                 self.dims
-            )));
+            ));
         }
 
         let cell_repr = |x, y| {
@@ -367,9 +352,9 @@ impl GameServer for NativeServer {
         clear: Vec<Coords>,
         flag: Vec<Coords>,
         unflag: Vec<Coords>,
-    ) -> Result<Vec<CellInfo>, Box<Error>> {
+    ) -> Result<Vec<CellInfo>, GameError> {
         if self.game_state != GameState::Ongoing {
-            return Err(GameError(String::from("Game already finished")))?;
+            return Err(String::from("Game already finished"))?;
         }
 
         let clear_req_indices: Vec<usize> = clear.iter()

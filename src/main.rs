@@ -16,8 +16,11 @@ mod client;
 mod game_batch;
 mod util;
 
+use std::error::Error;
 use self::chrono::Utc;
 use game_batch::{GameBatch, SpecResult};
+
+type GameError = Box<dyn Error + Sync + Send>;
 
 fn main() {
     let batch = GameBatch {

@@ -2,13 +2,15 @@ extern crate rand;
 extern crate mersenne_twister;
 extern crate itertools;
 extern crate mongodb;
+extern crate rayon;
 
-use std::error::Error;
 use std::iter::repeat;
 use self::rand::{Rng, SeedableRng};
 use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
 use self::mongodb::db::{Database, ThreadedDatabase};
+use self::rayon::prelude::*;
+use ::GameError;
 use server::{NativeServer, JsonServerWrapper, GameServer, GameState};
 use client::Client;
 
@@ -28,6 +30,7 @@ pub struct SpecResult {
     pub wins: usize
 }
 
+#[derive(Debug)]
 struct GameSpec {
     dims: Vec<usize>,
     mines: usize,
@@ -42,6 +45,11 @@ struct GridSpec {
     mines: usize
 }
 
+struct GameResult {
+    spec_index: usize,
+    win: bool
+}
+
 lazy_static! {
     static ref DB_CONNECTION: Database = {
         let client = mongodb::ThreadedClient::connect("localhost", 27017).unwrap();
@@ -49,7 +57,7 @@ lazy_static! {
     };
 }
 
-fn new_native_game(spec: GameSpec) -> Result<NativeServer, Box<Error>> {
+fn new_native_game(spec: GameSpec) -> Result<NativeServer, GameError> {
     let GameSpec { dims, mines, seed, autoclear } = spec;
 
     Ok(NativeServer::new(
@@ -61,7 +69,7 @@ fn new_native_game(spec: GameSpec) -> Result<NativeServer, Box<Error>> {
     ))
 }
 
-fn new_json_server_game(spec: GameSpec) -> Result<JsonServerWrapper, Box<Error>> {
+fn new_json_server_game(spec: GameSpec) -> Result<JsonServerWrapper, GameError> {
     let GameSpec { dims, mines, seed, autoclear } = spec;
 
     JsonServerWrapper::new_game(dims, mines, Some(seed), autoclear)
@@ -98,12 +106,12 @@ impl<D, M> GameBatch<D, M>
           <M as IntoIterator>::IntoIter: Clone,
 {
     #[allow(dead_code)]
-    pub fn run_json_server(self) -> Result<Vec<SpecResult>, Box<dyn Error>> {
+    pub fn run_json_server(self) -> Result<Vec<SpecResult>, GameError> {
         self.run(new_json_server_game)
     }
 
     #[allow(dead_code)]
-    pub fn run_native(self) -> Result<Vec<SpecResult>, Box<dyn Error>> {
+    pub fn run_native(self) -> Result<Vec<SpecResult>, GameError> {
         self.run(new_native_game)
     }
 
@@ -134,15 +142,20 @@ impl<D, M> GameBatch<D, M>
         GameSpecs { grid_specs, autoclear, rng }
     }
 
-    fn run<F, G>(self, new_game: F) -> Result<Vec<SpecResult>, Box<dyn Error>>
+    fn run<F, G>(self, new_game: F) -> Result<Vec<SpecResult>, GameError>
         where G: GameServer,
-              F: Fn(GameSpec) -> Result<G, Box<dyn Error>>,
+              F: Fn(GameSpec) -> Result<G, GameError> + Send + Sync,
     {
-        let mut results = Vec::new();
+        let mut specs = Vec::new();
+        let mut spec_results = Vec::new();
 
         for (i, spec) in self.game_specs() {
-            while i >= results.len() {
-                results.push(SpecResult {
+            if i > spec_results.len() {
+                panic!("spec_index out of order");
+            }
+
+            if i == spec_results.len() {
+                spec_results.push(SpecResult {
                     dims: spec.dims.clone(),
                     mines: spec.mines,
                     played: 0,
@@ -150,16 +163,28 @@ impl<D, M> GameBatch<D, M>
                 })
             }
 
-            let game = new_game(spec)?;
-            let mut client = Client::new(game);
-            let win = client.play()? == GameState::Win;
+            specs.push((i, spec));
+        }
 
-            results[i].played += 1;
+        let results: Vec<Result<GameResult, GameError>> = specs.into_par_iter()
+            .map(|(spec_index, spec)| {
+                let game = new_game(spec)?;
+                let mut client = Client::new(game);
+                let win = client.play()? == GameState::Win;
+
+                Ok(GameResult { win, spec_index })
+            })
+            .collect();
+
+        for result in results {
+            let GameResult { spec_index, win } = result?;
+
+            spec_results[spec_index].played += 1;
             if win {
-                results[i].wins += 1;
+                spec_results[spec_index].wins += 1;
             }
         }
 
-        Ok(results)
+        Ok(spec_results)
     }
 }

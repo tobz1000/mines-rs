@@ -6,7 +6,7 @@ mod db;
 pub use self::json_server_wrapper::JsonServerWrapper;
 pub use self::native_server::NativeServer;
 
-use std::error::Error;
+use ::GameError;
 use coords::Coords;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -18,7 +18,7 @@ pub trait GameServer {
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
 		unflag: Vec<Coords>,
-	) -> Result<Vec<CellInfo>, Box<Error>>;
+	) -> Result<Vec<CellInfo>, GameError>;
 
 	fn dims(&self) -> &[usize];
 

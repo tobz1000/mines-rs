@@ -1,4 +1,4 @@
-use std::error::Error;
+use ::GameError;
 use coords::Coords;
 use client::cell::{Cell, Action, SingleCellAction};
 use client::action_queue::ActionQueue;
@@ -23,7 +23,7 @@ impl<G: GameServer> Client<G> {
         Client { grid, server }
     }
 
-    pub fn play(&mut self) -> Result<GameState, Box<Error>> {
+    pub fn play(&mut self) -> Result<GameState, GameError> {
         let mut to_clear = vec![Coords(
             self.server.dims().iter().map(|&d| d / 2).collect()
         )];
