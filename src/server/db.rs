@@ -15,7 +15,7 @@ pub enum CellState { Empty, Cleared, Mine }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CellInfo {
-    pub surrounding: usize,
+    pub surrounding: i32,
     pub state: CellState,
     pub coords: Coords<i32>
 }

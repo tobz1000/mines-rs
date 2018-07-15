@@ -73,7 +73,7 @@ impl TurnInfo {
                 };
 
                 db::CellInfo {
-                    surrounding: surr_mine_count,
+                    surrounding: surr_mine_count as i32,
                     state,
                     coords: Coords::from_index(i, &server.dims)
                 }
