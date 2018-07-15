@@ -1,7 +1,10 @@
+extern crate serde;
+
 use std::fmt;
 use std::convert::{TryFrom, TryInto};
+use self::serde::{Serialize, Deserialize, Serializer, Deserializer};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct Coords<T = usize>(pub Vec<T>);
 
 impl<T> Coords<T>
@@ -29,6 +32,19 @@ impl<T> Coords<T>
 impl<T: fmt::Debug> fmt::Debug for Coords<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl<T: Serialize> Serialize for Coords<T> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Coords<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let vec = Vec::<T>::deserialize(deserializer)?;
+        Ok(Coords(vec))
     }
 }
 
