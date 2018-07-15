@@ -57,24 +57,6 @@ lazy_static! {
     };
 }
 
-fn new_native_game(spec: GameSpec) -> Result<NativeServer, GameError> {
-    let GameSpec { dims, mines, seed, autoclear } = spec;
-
-    Ok(NativeServer::new(
-        dims,
-        mines,
-        Some(seed),
-        autoclear,
-        Some(DB_CONNECTION.clone())
-    ))
-}
-
-fn new_json_server_game(spec: GameSpec) -> Result<JsonServerWrapper, GameError> {
-    let GameSpec { dims, mines, seed, autoclear } = spec;
-
-    JsonServerWrapper::new_game(dims, mines, Some(seed), autoclear)
-}
-
 struct GameSpecs<G, R>
     where G: Iterator<Item=GridSpec>,
           R: Rng
@@ -107,12 +89,18 @@ impl<D, M> GameBatch<D, M>
 {
     #[allow(dead_code)]
     pub fn run_json_server(self) -> Result<Vec<SpecResult>, GameError> {
-        self.run(new_json_server_game)
+        self.run(|GameSpec { dims, mines, seed, autoclear }| {
+            JsonServerWrapper::new_game(dims, mines, Some(seed), autoclear)
+        })
     }
 
     #[allow(dead_code)]
-    pub fn run_native(self) -> Result<Vec<SpecResult>, GameError> {
-        self.run(new_native_game)
+    pub fn run_native(self, to_db: bool) -> Result<Vec<SpecResult>, GameError> {
+        self.run(|GameSpec { dims, mines, seed, autoclear }| {
+            let conn = if to_db { Some(DB_CONNECTION.clone()) } else { None };
+
+            Ok(NativeServer::new(dims, mines, Some(seed), autoclear, conn))
+        })
     }
 
     fn game_specs(self) -> GameSpecs<impl Iterator<Item=GridSpec>, MT19937> {

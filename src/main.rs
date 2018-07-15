@@ -32,7 +32,7 @@ fn main() {
     };
 
     let start = Utc::now();
-    let results = batch.clone().run_native().unwrap();
+    let results = batch.clone().run_native(false).unwrap();
     let game_count = results.len() * batch.count_per_spec;
 
     for SpecResult { dims, mines, wins, .. } in results {
