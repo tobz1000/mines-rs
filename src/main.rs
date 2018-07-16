@@ -5,6 +5,7 @@
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate itertools;
 #[macro_use] extern crate lazy_static;
+#[macro_use] extern crate structopt;
 extern crate chrono;
 
 #[cfg(test)] #[macro_use] extern crate quickcheck;
@@ -15,25 +16,24 @@ mod game_grid;
 mod client;
 mod game_batch;
 mod util;
+mod options;
 
 use std::error::Error;
 use self::chrono::Utc;
-use game_batch::{GameBatch, SpecResult};
+use game_batch::SpecResult;
+use options::Options;
 
 type GameError = Box<dyn Error + Sync + Send>;
 
 fn main() {
-    let batch = GameBatch {
-        count_per_spec: 100,
-        dims_range: vec![20..=20, 20..=20],
-        mines_range: (0..=100).step_by(10),
-        autoclear: true,
-        metaseed: 0xB16B0B5
-    };
+    use structopt::StructOpt;
+    let batch = Options::from_args().into_game_batch();
 
     let start = Utc::now();
     let results = batch.clone().run_native(false).unwrap();
     let game_count = results.len() * batch.count_per_spec;
+
+    println!("Dims\t\tMines\tWins/Played");
 
     for SpecResult { dims, mines, wins, .. } in results {
         let win_perc = wins as f64 * 100f64 / batch.count_per_spec as f64;
