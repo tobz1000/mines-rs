@@ -52,5 +52,5 @@ fn main() {
     let dur_s = dur_us as f64 / 1_000_000_f64;
     let avg_us = dur_us / game_count as i64;
 
-    println!("Time: {:.2}s (avg {}µs/game)", dur_s, avg_us);
+    println!("Time: {:.2}s (avg {}µs/game/core)", dur_s, avg_us);
 }
