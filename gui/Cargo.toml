@@ -1,0 +1,7 @@
+[package]
+name = "mines-rs-gui"
+version = "0.1.0"
+authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
+
+[dependencies]
+yew = { git = "https://github.com/DenisKolodin/yew.git" }
