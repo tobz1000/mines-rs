@@ -1,7 +1,9 @@
+extern crate mines_rs;
+
 use std::iter::StepBy;
 use std::error::Error;
 use std::ops::RangeInclusive;
-use game_batch::GameBatch;
+use mines_rs::GameBatch;
 
 type RangeOpt = StepBy<RangeInclusive<usize>>;
 

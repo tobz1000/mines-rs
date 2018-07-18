@@ -1,29 +1,13 @@
-#![feature(vec_resize_default)]
-#![feature(iterator_try_fold)]
-#![feature(try_from)]
 
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate itertools;
-#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate structopt;
 extern crate chrono;
+extern crate mines_rs;
 
-#[cfg(test)] #[macro_use] extern crate quickcheck;
-
-mod server;
-mod coords;
-mod game_grid;
-mod client;
-mod game_batch;
-mod util;
 mod options;
 
-use std::error::Error;
 use self::chrono::Utc;
-use game_batch::SpecResult;
+use mines_rs::SpecResult;
 use options::Options;
-
-type GameError = Box<dyn Error + Sync + Send>;
 
 fn main() {
     use structopt::StructOpt;

@@ -21,3 +21,11 @@ wither = "^0.5"
 
 [dev-dependencies]
 quickcheck = "^0.6"
+
+[lib]
+name = "mines_rs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mines-rs-cli"
+path = "src/cli/main.rs"
