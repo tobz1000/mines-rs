@@ -3,8 +3,8 @@ mod json_server_wrapper;
 mod native_server;
 mod db;
 
-pub use self::json_server_wrapper::JsonServerWrapper;
-pub use self::native_server::NativeServer;
+pub(crate) use self::json_server_wrapper::JsonServerWrapper;
+pub(crate) use self::native_server::NativeServer;
 
 use ::GameError;
 use coords::Coords;

@@ -1,15 +1,13 @@
 extern crate rand;
 extern crate mersenne_twister;
 extern crate itertools;
-extern crate mongodb;
 extern crate rayon;
 
 use std::iter::repeat;
 use self::rand::{Rng, SeedableRng};
 use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
-use self::mongodb::db::{Database, ThreadedDatabase};
-use self::rayon::prelude::*;
+use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
 use ::GameError;
 use server::{NativeServer, JsonServerWrapper, GameServer, GameState};
 use client::Client;
@@ -50,13 +48,6 @@ struct GameResult {
     win: bool
 }
 
-lazy_static! {
-    static ref DB_CONNECTION: Database = {
-        let client = mongodb::ThreadedClient::connect("localhost", 27017).unwrap();
-        Database::open(client, "test", None, None)
-    };
-}
-
 struct GameSpecs<G, R>
     where G: Iterator<Item=GridSpec>,
           R: Rng
@@ -87,19 +78,15 @@ impl<D, M> GameBatch<D, M>
           M: IntoIterator<Item=usize>,
           <M as IntoIterator>::IntoIter: Clone,
 {
-    #[allow(dead_code)]
     pub fn run_json_server(self) -> Result<Vec<SpecResult>, GameError> {
         self.run(|GameSpec { dims, mines, seed, autoclear }| {
             JsonServerWrapper::new_game(dims, mines, Some(seed), autoclear)
         })
     }
 
-    #[allow(dead_code)]
     pub fn run_native(self, to_db: bool) -> Result<Vec<SpecResult>, GameError> {
         self.run(|GameSpec { dims, mines, seed, autoclear }| {
-            let conn = if to_db { Some(DB_CONNECTION.clone()) } else { None };
-
-            Ok(NativeServer::new(dims, mines, Some(seed), autoclear, conn))
+            Ok(NativeServer::new(dims, mines, Some(seed), autoclear, to_db))
         })
     }
 

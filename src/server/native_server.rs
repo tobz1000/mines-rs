@@ -2,16 +2,14 @@ extern crate rand;
 extern crate chrono;
 extern crate itertools;
 extern crate mersenne_twister;
-extern crate mongodb;
 extern crate wither;
+
 use std::collections::HashSet;
 use ::GameError;
 use self::rand::{Rng, thread_rng, SeedableRng};
 use self::chrono::{DateTime, Utc};
 use self::itertools::Itertools;
 use self::mersenne_twister::MT19937;
-use self::mongodb::db::Database;
-use self::wither::Model;
 
 use coords::Coords;
 use server::{GameServer, GameState, CellInfo};
@@ -19,14 +17,14 @@ use server::db;
 use game_grid::GameGrid;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum CellAction { NoAction, Flagged, Cleared }
+pub enum CellAction { NoAction, Flagged, Cleared }
 
 #[derive(Debug)]
-struct Cell {
-    mine: bool,
-    action: CellAction,
-    surr_indices: HashSet<usize>,
-    surr_mine_count: usize
+pub struct Cell {
+    pub mine: bool,
+    pub action: CellAction,
+    pub surr_indices: HashSet<usize>,
+    pub surr_mine_count: usize
 }
 
 impl Cell {
@@ -40,70 +38,26 @@ impl Cell {
     }
 }
 
-struct TurnInfo {
-    timestamp: DateTime<Utc>,
-    clear_req: Vec<usize>,
-    clear_actual: Vec<usize>,
-    flagged: Vec<usize>,
-    unflagged: Vec<usize>,
-    cells_rem: usize,
-    game_state: GameState,
-}
-
-impl TurnInfo {
-    fn to_document(&self, server: &NativeServer) -> db::Turn {
-        let to_coords_vec = |indices: &[usize]| -> Vec<Coords<i32>> {
-            indices.iter()
-                .map(|&i| Coords::from_index(i, &server.dims))
-                .collect()
-        };
-
-        let clear_actual = self.clear_actual.iter()
-            .map(|&i| {
-                let &Cell {
-                    mine,
-                    surr_mine_count,
-                    ..
-                } = &server.grid[i];
-
-                let state = if mine {
-                    db::CellState::Mine
-                } else {
-                    db::CellState::Cleared
-                };
-
-                db::CellInfo {
-                    surrounding: surr_mine_count as i32,
-                    state,
-                    coords: Coords::from_index(i, &server.dims)
-                }
-            })
-            .collect();
-
-        db::Turn {
-            turn_taken_at: self.timestamp.clone(),
-            clear_req: to_coords_vec(&self.clear_req),
-            clear_actual,
-            flagged: to_coords_vec(&self.flagged),
-            unflagged: to_coords_vec(&self.unflagged),
-            game_over: self.game_state != GameState::Ongoing,
-            win: self.game_state == GameState::Win,
-            cells_rem: self.cells_rem as i32
-        }
-    }
-}
-
 pub struct NativeServer {
-    created_at: DateTime<Utc>,
-    dims: Vec<usize>,
-    grid: GameGrid<Cell>,
-    mines: usize,
-    seed: u32,
-    autoclear: bool,
+    pub created_at: DateTime<Utc>,
+    pub dims: Vec<usize>,
+    pub grid: GameGrid<Cell>,
+    pub mines: usize,
+    pub seed: u32,
+    pub autoclear: bool,
+    pub turns: Option<Vec<TurnInfo>>,
     cells_rem: usize,
     game_state: GameState,
-    turns: Vec<TurnInfo>,
-    db_connection: Option<Database>,
+}
+
+pub struct TurnInfo {
+    pub timestamp: DateTime<Utc>,
+    pub clear_req: Vec<usize>,
+    pub clear_actual: Vec<usize>,
+    pub flagged: Vec<usize>,
+    pub unflagged: Vec<usize>,
+    pub cells_rem: usize,
+    pub game_state: GameState,
 }
 
 impl NativeServer {
@@ -112,9 +66,11 @@ impl NativeServer {
         mines: usize,
         user_seed: Option<u32>,
         autoclear: bool,
-        db_connection: Option<Database>
+        store_turns: bool
     ) -> Self {
         let size = dims.iter().fold(1, |s, &i| s * i);
+        let cells_rem = size - mines;
+        let game_state = GameState::Ongoing;
 
         if dims.len() == 0 || mines >= size {
             panic!(
@@ -167,26 +123,33 @@ impl NativeServer {
             })
         };
 
-        let mut server = NativeServer {
+        let turns = if store_turns {
+            Some(vec![
+                TurnInfo {
+                    timestamp: Utc::now(),
+                    clear_req: Vec::new(),
+                    clear_actual: Vec::new(),
+                    flagged: Vec::new(),
+                    unflagged: Vec::new(),
+                    cells_rem,
+                    game_state,
+                }
+            ])
+        } else {
+            None
+        };
+
+        NativeServer {
             created_at: Utc::now(),
             dims,
             mines,
             seed,
             autoclear,
             grid,
-            cells_rem: size - mines,
-            game_state: GameState::Ongoing,
-            turns: Vec::new(),
-            db_connection
-        };
-
-        if let Some(_) = server.db_connection {
-            let first_turn = server.turn_info(vec![], vec![], vec![], vec![]);
-
-            server.turns.push(first_turn);
+            cells_rem,
+            game_state,
+            turns
         }
-
-        server
     }
 
     #[allow(dead_code)]
@@ -224,48 +187,6 @@ impl NativeServer {
         let row_count = *self.dims.get(1).unwrap_or(&1);
 
         Ok((0..row_count).map(row_repr).join("\n"))
-    }
-
-    fn to_document(&self) -> db::Game {
-        let &NativeServer {
-            created_at,
-            ref dims,
-            ref grid,
-            mines,
-            seed,
-            autoclear,
-            ref turns,
-            ..
-        } = self;
-
-        let cell_array = grid.iter().map(|&Cell { mine, action, .. }| {
-            match (mine, action) {
-                (true, _) => db::CellState::Mine,
-                (false, CellAction::Cleared) => db::CellState::Cleared,
-                (false, _) => db::CellState::Empty
-            }
-        }).collect();
-
-        let flag_array = grid.iter()
-            .map(|cell| cell.action == CellAction::Flagged)
-            .collect();
-
-        let turns = turns.iter().map(|turn| turn.to_document(self)).collect();
-
-        db::Game {
-            id: None,
-            created_at,
-            pass: None,
-            seed: seed as i32,
-            dims: dims.iter().map(|&d| d as i32).collect(),
-            size: dims.iter().fold(1, |acc, &d| acc * d) as i32,
-            mines: mines as i32,
-            autoclear,
-            turns,
-            clients: vec!["RustoBusto".to_owned()],
-            cell_array,
-            flag_array
-        }
     }
 
     fn clear_cells(&mut self, mut to_clear: Vec<usize>) -> Vec<usize> {
@@ -317,24 +238,6 @@ impl NativeServer {
         actual_change
     }
 
-    fn turn_info(
-        &self,
-        clear_req: Vec<usize>,
-        clear_actual: Vec<usize>,
-        flagged: Vec<usize>,
-        unflagged: Vec<usize>
-    ) -> TurnInfo {
-        TurnInfo {
-            timestamp: Utc::now(),
-            clear_req,
-            clear_actual,
-            flagged,
-            unflagged,
-            cells_rem: self.cells_rem,
-            game_state: self.game_state,
-        }
-    }
-
     fn client_cell_info(&self, index: usize) -> CellInfo {
         let cell = &self.grid[index];
 
@@ -365,21 +268,22 @@ impl GameServer for NativeServer {
         let flag_actual = self.set_flags(flag, CellAction::Flagged);
         let unflag_actual = self.set_flags(unflag, CellAction::NoAction);
 
-        if let Some(ref db_connection) = self.db_connection {
-            let turn_info = self.turn_info(
-                clear_req_indices,
-                clear_actual.clone(),
-                flag_actual,
-                unflag_actual
-            );
+        if let Some(ref mut turns) = self.turns {
+            let turn_info = TurnInfo {
+                timestamp: Utc::now(),
+                clear_req: clear_req_indices,
+                clear_actual: clear_actual.clone(),
+                flagged: flag_actual,
+                unflagged: unflag_actual,
+                cells_rem: self.cells_rem,
+                game_state: self.game_state,
+            };
 
-            self.turns.push(turn_info);
+            turns.push(turn_info);
+        }
 
-            // Intended to only save once - doc model is discarded, so _id is
-            // not persisted.
-            if self.game_state != GameState::Ongoing {
-                self.to_document().save(db_connection.clone(), None)?;
-            }
+        if self.game_state != GameState::Ongoing && self.turns.is_some() {
+            db::insert_game(self)?;
         }
 
         let client_cell_info = clear_actual.iter()
