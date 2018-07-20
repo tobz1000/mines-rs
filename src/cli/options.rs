@@ -42,7 +42,7 @@ fn parse_seed(s: &str) -> Result<u32, &str> {
 #[derive(StructOpt, Debug)]
 pub struct Options {
     #[structopt(short = "c", default_value ="100")]
-    pub count_per_spec: usize,
+    count_per_spec: usize,
 
     #[structopt(
         short = "d",
@@ -50,20 +50,21 @@ pub struct Options {
         raw(use_delimiter = "true"),
         default_value = "20,20"
     )]
-    pub dims_range: Vec<RangeOpt>,
+    dims_range: Vec<RangeOpt>,
 
     #[structopt(
         short = "m",
         parse(try_from_str = "parse_mines_range"),
         default_value = "10..50..5"
     )]
-    pub mines_range: RangeOpt,
+    mines_range: RangeOpt,
 
     #[structopt(
         short = "s",
         default_value = "133337",
-        parse(try_from_str = "parse_seed"))]
-    pub metaseed: u32,
+        parse(try_from_str = "parse_seed")
+    )]
+    metaseed: u32,
 }
 
 impl Options {
