@@ -37,10 +37,7 @@ struct GameSpec {
 }
 
 #[derive(Clone)]
-// This shouldn't be public. Compiler claims that this is being leaked through
-// GameBatch/game_specs however; made `pub` to satisfy compiler. TODO: figure
-// out what's up
-pub struct GridSpec {
+struct GridSpec {
     spec_index: usize,
     dims: Vec<usize>,
     mines: usize
@@ -76,34 +73,6 @@ impl<D, M, G> GameBatch<D, M, G>
           <M as IntoIterator>::IntoIter: Clone,
           G: GameServer
 {
-    fn game_specs(self) -> GameSpecs<impl Iterator<Item=GridSpec>, MT19937> {
-        let GameBatch {
-            count_per_spec,
-            dims_range,
-            mines_range,
-            autoclear,
-            metaseed,
-            ..
-        } = self;
-
-        let all_dims = dims_range.into_iter().multi_cartesian_product();
-
-        let grid_specs = iproduct!(all_dims, mines_range)
-            .filter(|(dims, mines)| {
-                let size = dims.iter().fold(1, |s, &d| s * d);
-                size > *mines
-            })
-            .enumerate()
-            .flat_map(move |(spec_index, (dims, mines))| {
-                repeat(GridSpec { spec_index, dims, mines })
-                    .take(count_per_spec)
-            });
-
-        let rng: MT19937 = SeedableRng::from_seed(metaseed);
-
-        GameSpecs { grid_specs, autoclear, rng }
-    }
-
     pub fn run(self) -> Result<Vec<SpecResult>, GameError> {
         let mut specs = Vec::new();
         let mut spec_results = Vec::new();
@@ -154,5 +123,33 @@ impl<D, M, G> GameBatch<D, M, G>
         }
 
         Ok(spec_results)
+    }
+
+    fn game_specs(self) -> GameSpecs<impl Iterator<Item=GridSpec>, MT19937> {
+        let GameBatch {
+            count_per_spec,
+            dims_range,
+            mines_range,
+            autoclear,
+            metaseed,
+            ..
+        } = self;
+
+        let all_dims = dims_range.into_iter().multi_cartesian_product();
+
+        let grid_specs = iproduct!(all_dims, mines_range)
+            .filter(|(dims, mines)| {
+                let size = dims.iter().fold(1, |s, &d| s * d);
+                size > *mines
+            })
+            .enumerate()
+            .flat_map(move |(spec_index, (dims, mines))| {
+                repeat(GridSpec { spec_index, dims, mines })
+                    .take(count_per_spec)
+            });
+
+        let rng: MT19937 = SeedableRng::from_seed(metaseed);
+
+        GameSpecs { grid_specs, autoclear, rng }
     }
 }
