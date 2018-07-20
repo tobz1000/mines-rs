@@ -35,7 +35,7 @@ fn parse_dims_range(s: &str) -> Result<RangeOpt, &str> {
 
 fn parse_seed(s: &str) -> Result<u32, &str> {
     s.parse().or(Err(
-        "Seed should be positive hex less than U32MAX, e.g. `0xabc12`"
+        "Seed should be positive number less than U32MAX, e.g. `56023`"
     ))
 }
 
