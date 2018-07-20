@@ -9,7 +9,7 @@ use self::mongodb::db::{Database, ThreadedDatabase};
 use self::bson::oid::ObjectId;
 use self::wither::Model;
 use server::GameState;
-use server::native_server::{NativeServer, TurnInfo, Cell, CellAction};
+use server::native::{NativeServer, TurnInfo, Cell, CellAction};
 use coords::Coords;
 
 lazy_static! {
@@ -21,45 +21,45 @@ lazy_static! {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub enum CellState { Empty, Cleared, Mine }
+enum CellState { Empty, Cleared, Mine }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CellInfo {
-    pub surrounding: i32,
-    pub state: CellState,
-    pub coords: Coords<i32>
+struct CellInfo {
+    surrounding: i32,
+    state: CellState,
+    coords: Coords<i32>
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Game {
+struct Game {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<ObjectId>,
-    pub created_at: DateTime<Utc>,
-    pub pass: Option<String>,
-    pub seed: i32,
-    pub dims: Vec<i32>,
-    pub size: i32,
-    pub mines: i32,
-    pub autoclear: bool,
-    pub turns: Option<Vec<Turn>>,
-    pub clients: Vec<String>,
-    pub cell_array: Vec<CellState>,
-    pub flag_array: Vec<bool>,
+    id: Option<ObjectId>,
+    created_at: DateTime<Utc>,
+    pass: Option<String>,
+    seed: i32,
+    dims: Vec<i32>,
+    size: i32,
+    mines: i32,
+    autoclear: bool,
+    turns: Option<Vec<Turn>>,
+    clients: Vec<String>,
+    cell_array: Vec<CellState>,
+    flag_array: Vec<bool>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Turn {
-    pub turn_taken_at: DateTime<Utc>,
-    pub clear_req: Vec<Coords<i32>>,
-    pub clear_actual: Vec<CellInfo>,
-    pub flagged: Vec<Coords<i32>>,
-    pub unflagged: Vec<Coords<i32>>,
-    pub game_over: bool,
-    pub win: bool,
-    pub cells_rem: i32,
+struct Turn {
+    turn_taken_at: DateTime<Utc>,
+    clear_req: Vec<Coords<i32>>,
+    clear_actual: Vec<CellInfo>,
+    flagged: Vec<Coords<i32>>,
+    unflagged: Vec<Coords<i32>>,
+    game_over: bool,
+    win: bool,
+    cells_rem: i32,
 }
 
 impl<'a> Model<'a> for Game {

@@ -9,7 +9,7 @@ use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
 use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
 use ::GameError;
-use server::{NativeServer, JsonServerWrapper, GameServer, GameState};
+use server::{NativeServer, GameServer, GameState, JsServerWrapper};
 use client::Client;
 
 #[derive(Clone)]
@@ -78,9 +78,9 @@ impl<D, M> GameBatch<D, M>
           M: IntoIterator<Item=usize>,
           <M as IntoIterator>::IntoIter: Clone,
 {
-    pub fn run_json_server(self) -> Result<Vec<SpecResult>, GameError> {
+    pub fn run_js_server(self) -> Result<Vec<SpecResult>, GameError> {
         self.run(|GameSpec { dims, mines, seed, autoclear }| {
-            JsonServerWrapper::new_game(dims, mines, Some(seed), autoclear)
+            JsServerWrapper::new_game(dims, mines, Some(seed), autoclear)
         })
     }
 

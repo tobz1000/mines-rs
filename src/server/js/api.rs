@@ -1,7 +1,7 @@
 pub mod req {
     use coords::Coords;
 
-    pub trait JsonServerRequest {
+    pub trait JsServerRequest {
         const ACTION: &'static str;
     }
 
@@ -14,7 +14,7 @@ pub mod req {
         pub unflag: Vec<Coords>,
     }
 
-    impl<'a> JsonServerRequest for TurnRequest<'a> {
+    impl<'a> JsServerRequest for TurnRequest<'a> {
         const ACTION: &'static str = "turn";
     }
 
@@ -27,7 +27,7 @@ pub mod req {
         pub autoclear: bool,
     }
 
-    impl<'a> JsonServerRequest for NewGameRequest<'a> {
+    impl<'a> JsServerRequest for NewGameRequest<'a> {
         const ACTION: &'static str = "new";
     }
 
@@ -36,7 +36,7 @@ pub mod req {
         pub id: &'a str
     }
 
-    impl<'a> JsonServerRequest for StatusRequest<'a> {
+    impl<'a> JsServerRequest for StatusRequest<'a> {
         const ACTION: &'static str = "status";
     }
 }

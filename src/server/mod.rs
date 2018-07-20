@@ -1,10 +1,8 @@
-mod json_api;
-mod json_server_wrapper;
-mod native_server;
-mod db;
+mod js;
+mod native;
 
-pub(crate) use self::json_server_wrapper::JsonServerWrapper;
-pub(crate) use self::native_server::NativeServer;
+pub(crate) use self::js::JsServerWrapper;
+pub(crate) use self::native::NativeServer;
 
 use ::GameError;
 use coords::Coords;

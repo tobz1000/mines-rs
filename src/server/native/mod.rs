@@ -4,6 +4,8 @@ extern crate itertools;
 extern crate mersenne_twister;
 extern crate wither;
 
+mod db;
+
 use std::collections::HashSet;
 use ::GameError;
 use self::rand::{Rng, thread_rng, SeedableRng};
@@ -13,18 +15,17 @@ use self::mersenne_twister::MT19937;
 
 use coords::Coords;
 use server::{GameServer, GameState, CellInfo};
-use server::db;
 use game_grid::GameGrid;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum CellAction { NoAction, Flagged, Cleared }
+enum CellAction { NoAction, Flagged, Cleared }
 
 #[derive(Debug)]
-pub struct Cell {
-    pub mine: bool,
-    pub action: CellAction,
-    pub surr_indices: HashSet<usize>,
-    pub surr_mine_count: usize
+struct Cell {
+    mine: bool,
+    action: CellAction,
+    surr_indices: HashSet<usize>,
+    surr_mine_count: usize
 }
 
 impl Cell {
@@ -39,25 +40,25 @@ impl Cell {
 }
 
 pub struct NativeServer {
-    pub created_at: DateTime<Utc>,
-    pub dims: Vec<usize>,
-    pub grid: GameGrid<Cell>,
-    pub mines: usize,
-    pub seed: u32,
-    pub autoclear: bool,
-    pub turns: Option<Vec<TurnInfo>>,
+    created_at: DateTime<Utc>,
+    dims: Vec<usize>,
+    grid: GameGrid<Cell>,
+    mines: usize,
+    seed: u32,
+    autoclear: bool,
+    turns: Option<Vec<TurnInfo>>,
     cells_rem: usize,
     game_state: GameState,
 }
 
-pub struct TurnInfo {
-    pub timestamp: DateTime<Utc>,
-    pub clear_req: Vec<usize>,
-    pub clear_actual: Vec<usize>,
-    pub flagged: Vec<usize>,
-    pub unflagged: Vec<usize>,
-    pub cells_rem: usize,
-    pub game_state: GameState,
+struct TurnInfo {
+    timestamp: DateTime<Utc>,
+    clear_req: Vec<usize>,
+    clear_actual: Vec<usize>,
+    flagged: Vec<usize>,
+    unflagged: Vec<usize>,
+    cells_rem: usize,
+    game_state: GameState,
 }
 
 impl NativeServer {

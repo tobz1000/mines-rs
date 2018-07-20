@@ -2,30 +2,32 @@ extern crate hyper_sync;
 extern crate serde;
 extern crate serde_json;
 
+mod api;
+
 use std::str;
 use coords::Coords;
 use server::{GameServer, GameState, CellInfo as NativeCellInfo};
-use server::json_api::req::{JsonServerRequest, TurnRequest, NewGameRequest};
-use server::json_api::resp::{ServerResponse, CellState, CellInfo as JsonCellInfo};
 use ::GameError;
+use self::api::req::{JsServerRequest, TurnRequest, NewGameRequest};
+use self::api::resp::{ServerResponse, CellState, CellInfo as JsCellInfo};
 use self::hyper_sync::Client;
 use self::hyper_sync::header::{ContentLength, ContentType};
 use self::serde::ser::Serialize;
 
-pub struct JsonServerWrapper {
+pub struct JsServerWrapper {
 	client_name: String,
 	status: ServerResponse,
 	base_url: String,
 	http_client: Client,
 }
 
-impl JsonServerWrapper {
+impl JsServerWrapper {
 	pub fn new_game(
 		dims: Vec<usize>,
 		mines: usize,
 		seed: Option<u32>,
 		autoclear: bool,
-	) -> Result<JsonServerWrapper, GameError> {
+	) -> Result<JsServerWrapper, GameError> {
 		let client_name = "RustyBoi";
 		let http_client = Client::new();
 		let base_url = "http://localhost:1066/server";
@@ -42,7 +44,7 @@ impl JsonServerWrapper {
 			&http_client,
 		)?;
 
-		Ok(JsonServerWrapper {
+		Ok(JsServerWrapper {
 			base_url: base_url.to_owned(),
 			client_name: client_name.to_owned(),
 			status,
@@ -50,7 +52,7 @@ impl JsonServerWrapper {
 		})
 	}
 
-	fn action<R: JsonServerRequest + Serialize>(
+	fn action<R: JsServerRequest + Serialize>(
 		&mut self,
 		request: R,
 	) -> Result<(), GameError> {
@@ -63,7 +65,7 @@ impl JsonServerWrapper {
 		Ok(())
 	}
 
-	fn _action<R: JsonServerRequest + Serialize>(
+	fn _action<R: JsServerRequest + Serialize>(
 		base_url: &str,
 		request: &R,
 		http_client: &Client,
@@ -100,7 +102,7 @@ impl JsonServerWrapper {
 	}
 }
 
-impl<'a> GameServer for JsonServerWrapper {
+impl<'a> GameServer for JsServerWrapper {
 	fn turn(
 		&mut self,
 		clear: Vec<Coords>,
@@ -110,7 +112,7 @@ impl<'a> GameServer for JsonServerWrapper {
 		self.turn(clear, flag, unflag)?;
 
 		let clear_actual_native = self.status.clear_actual.iter()
-			.map(|&JsonCellInfo {
+			.map(|&JsCellInfo {
 				surrounding,
 				state,
 				ref coords
