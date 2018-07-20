@@ -12,21 +12,22 @@ use options::Options;
 fn main() {
     use structopt::StructOpt;
     let batch = Options::from_args().into_game_batch();
+    let count_per_spec = batch.count_per_spec;
 
     let start = Utc::now();
-    let results = batch.clone().run_native(false).unwrap();
-    let game_count = results.len() * batch.count_per_spec;
+    let results = batch.run().unwrap();
+    let game_count = results.len() * count_per_spec;
 
     println!("Dims\t\tMines\tWins/Played");
 
     for SpecResult { dims, mines, wins, .. } in results {
-        let win_perc = wins as f64 * 100f64 / batch.count_per_spec as f64;
+        let win_perc = wins as f64 * 100f64 / count_per_spec as f64;
         println!(
             "{:?}\t{}:\t{}/{}\t({:.0}%)",
             dims,
             mines,
             wins,
-            batch.count_per_spec,
+            count_per_spec,
             win_perc
         );
     }

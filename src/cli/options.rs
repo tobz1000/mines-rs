@@ -81,7 +81,8 @@ impl Options {
             dims_range,
             mines_range,
             autoclear: true,
-            metaseed
+            metaseed,
+            server_options: false
         }
     }
 }

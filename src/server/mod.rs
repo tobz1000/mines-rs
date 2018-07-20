@@ -10,7 +10,17 @@ use coords::Coords;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GameState { Ongoing, Win, Lose }
 
-pub trait GameServer {
+pub trait GameServer: Sized {
+	type Options: Clone + Send + Sync;
+
+	fn new(
+		dims: Vec<usize>,
+		mines: usize,
+		seed: Option<u32>,
+		autoclear: bool,
+		options: Self::Options
+	) -> Result<Self, GameError>;
+
 	fn turn(
 		&mut self,
 		clear: Vec<Coords>,

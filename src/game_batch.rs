@@ -9,16 +9,16 @@ use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
 use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
 use ::GameError;
-use server::{NativeServer, GameServer, GameState, JsServerWrapper};
+use server::{NativeServer, GameServer, GameState};
 use client::Client;
 
-#[derive(Clone)]
-pub struct GameBatch<D, M> {
+pub struct GameBatch<D, M, G: GameServer = NativeServer> {
     pub count_per_spec: usize,
     pub dims_range: Vec<D>,
     pub mines_range: M,
     pub autoclear: bool,
     pub metaseed: u32,
+    pub server_options: G::Options
 }
 
 pub struct SpecResult {
@@ -37,7 +37,10 @@ struct GameSpec {
 }
 
 #[derive(Clone)]
-struct GridSpec {
+// This shouldn't be public. Compiler claims that this is being leaked through
+// GameBatch/game_specs however; made `pub` to satisfy compiler. TODO: figure
+// out what's up
+pub struct GridSpec {
     spec_index: usize,
     dims: Vec<usize>,
     mines: usize
@@ -48,19 +51,13 @@ struct GameResult {
     win: bool
 }
 
-struct GameSpecs<G, R>
-    where G: Iterator<Item=GridSpec>,
-          R: Rng
-{
+struct GameSpecs<G: Iterator<Item=GridSpec>, R: Rng> {
     grid_specs: G,
     autoclear: bool,
     rng: R,
 }
 
-impl<G, R> Iterator for GameSpecs<G, R>
-    where G: Iterator<Item=GridSpec>,
-          R: Rng
-{
+impl<G: Iterator<Item=GridSpec>, R: Rng> Iterator for GameSpecs<G, R> {
     type Item = (usize, GameSpec);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -72,31 +69,21 @@ impl<G, R> Iterator for GameSpecs<G, R>
     }
 }
 
-impl<D, M> GameBatch<D, M>
+impl<D, M, G> GameBatch<D, M, G>
     where D: IntoIterator<Item=usize>,
           <D as IntoIterator>::IntoIter: Clone,
           M: IntoIterator<Item=usize>,
           <M as IntoIterator>::IntoIter: Clone,
+          G: GameServer
 {
-    pub fn run_js_server(self) -> Result<Vec<SpecResult>, GameError> {
-        self.run(|GameSpec { dims, mines, seed, autoclear }| {
-            JsServerWrapper::new_game(dims, mines, Some(seed), autoclear)
-        })
-    }
-
-    pub fn run_native(self, to_db: bool) -> Result<Vec<SpecResult>, GameError> {
-        self.run(|GameSpec { dims, mines, seed, autoclear }| {
-            Ok(NativeServer::new(dims, mines, Some(seed), autoclear, to_db))
-        })
-    }
-
     fn game_specs(self) -> GameSpecs<impl Iterator<Item=GridSpec>, MT19937> {
         let GameBatch {
             count_per_spec,
             dims_range,
             mines_range,
             autoclear,
-            metaseed
+            metaseed,
+            ..
         } = self;
 
         let all_dims = dims_range.into_iter().multi_cartesian_product();
@@ -117,12 +104,10 @@ impl<D, M> GameBatch<D, M>
         GameSpecs { grid_specs, autoclear, rng }
     }
 
-    fn run<F, G>(self, new_game: F) -> Result<Vec<SpecResult>, GameError>
-        where G: GameServer,
-              F: Fn(GameSpec) -> Result<G, GameError> + Send + Sync,
-    {
+    pub fn run(self) -> Result<Vec<SpecResult>, GameError> {
         let mut specs = Vec::new();
         let mut spec_results = Vec::new();
+        let server_options = self.server_options.clone();
 
         for (i, spec) in self.game_specs() {
             if i > spec_results.len() {
@@ -142,9 +127,17 @@ impl<D, M> GameBatch<D, M>
         }
 
         let results: Vec<Result<GameResult, GameError>> = specs.into_par_iter()
-            .map(|(spec_index, spec)| {
-                let game = new_game(spec)?;
+            .map(|(spec_index, GameSpec { dims, mines, seed, autoclear })| {
+                let game = G::new(
+                    dims,
+                    mines,
+                    Some(seed),
+                    autoclear,
+                    server_options.clone()
+                )?;
+
                 let mut client = Client::new(game);
+
                 let win = client.play()? == GameState::Win;
 
                 Ok(GameResult { win, spec_index })
