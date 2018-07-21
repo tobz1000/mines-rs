@@ -9,16 +9,15 @@ use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
 use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
 use ::GameError;
-use server::{NativeServer, GameServer, GameState};
+use server::{GameServer, GameState};
 use client::Client;
 
-pub struct GameBatch<D, M, G: GameServer = NativeServer> {
+pub struct GameBatch<D, M> {
     pub count_per_spec: usize,
     pub dims_range: Vec<D>,
     pub mines_range: M,
     pub autoclear: bool,
     pub metaseed: u32,
-    pub server_options: G::Options
 }
 
 pub struct SpecResult {
@@ -66,17 +65,18 @@ impl<G: Iterator<Item=GridSpec>, R: Rng> Iterator for GameSpecs<G, R> {
     }
 }
 
-impl<D, M, G> GameBatch<D, M, G>
+impl<D, M> GameBatch<D, M>
     where D: IntoIterator<Item=usize>,
           <D as IntoIterator>::IntoIter: Clone,
           M: IntoIterator<Item=usize>,
-          <M as IntoIterator>::IntoIter: Clone,
-          G: GameServer
+          <M as IntoIterator>::IntoIter: Clone
 {
-    pub fn run(self) -> Result<Vec<SpecResult>, GameError> {
+    pub fn run<G: GameServer>(
+        self,
+        config: G::Config
+    ) -> Result<Vec<SpecResult>, GameError> {
         let mut specs = Vec::new();
         let mut spec_results = Vec::new();
-        let server_options = self.server_options.clone();
 
         for (i, spec) in self.game_specs() {
             if i > spec_results.len() {
@@ -102,7 +102,7 @@ impl<D, M, G> GameBatch<D, M, G>
                     mines,
                     Some(seed),
                     autoclear,
-                    server_options.clone()
+                    config.clone()
                 )?;
 
                 let mut client = Client::new(game);
@@ -132,7 +132,6 @@ impl<D, M, G> GameBatch<D, M, G>
             mines_range,
             autoclear,
             metaseed,
-            ..
         } = self;
 
         let all_dims = dims_range.into_iter().multi_cartesian_product();

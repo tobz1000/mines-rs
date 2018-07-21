@@ -73,14 +73,14 @@ impl JsServerWrapper {
 }
 
 impl<'a> GameServer for JsServerWrapper {
-	type Options = ();
+	type Config = ();
 
 	fn new(
 		dims: Vec<usize>,
 		mines: usize,
 		seed: Option<u32>,
 		autoclear: bool,
-		_options: ()
+		_config: ()
 	) -> Result<JsServerWrapper, GameError> {
 		let client_name = "RustyBoi";
 		let http_client = Client::new();

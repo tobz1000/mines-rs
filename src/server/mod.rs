@@ -1,8 +1,8 @@
 mod js;
 mod native;
 
-pub(crate) use self::js::JsServerWrapper;
-pub(crate) use self::native::NativeServer;
+pub use self::js::JsServerWrapper;
+pub use self::native::{NativeServer, NativeServerConfig};
 
 use ::GameError;
 use coords::Coords;
@@ -11,14 +11,14 @@ use coords::Coords;
 pub enum GameState { Ongoing, Win, Lose }
 
 pub trait GameServer: Sized {
-	type Options: Clone + Send + Sync;
+	type Config: Clone + Send + Sync;
 
 	fn new(
 		dims: Vec<usize>,
 		mines: usize,
 		seed: Option<u32>,
 		autoclear: bool,
-		options: Self::Options
+		config: Self::Config
 	) -> Result<Self, GameError>;
 
 	fn turn(

@@ -3,7 +3,6 @@ extern crate mines_rs;
 use std::iter::StepBy;
 use std::error::Error;
 use std::ops::RangeInclusive;
-use mines_rs::GameBatch;
 
 type RangeOpt = StepBy<RangeInclusive<usize>>;
 
@@ -39,10 +38,21 @@ fn parse_seed(s: &str) -> Result<u32, &str> {
     ))
 }
 
+fn parse_server_type(s: &str) -> Result<ServerType, &str> {
+    match s {
+        "js" => Ok(ServerType::Js),
+        "native" => Ok(ServerType::Native),
+        _ => Err("Unknown server type")
+    }
+}
+
+#[derive(Debug)]
+pub enum ServerType { Js, Native }
+
 #[derive(StructOpt, Debug)]
 pub struct Options {
     #[structopt(short = "c", default_value ="100")]
-    count_per_spec: usize,
+    pub count_per_spec: usize,
 
     #[structopt(
         short = "d",
@@ -50,39 +60,33 @@ pub struct Options {
         raw(use_delimiter = "true"),
         default_value = "20,20"
     )]
-    dims_range: Vec<RangeOpt>,
+    pub dims_range: Vec<RangeOpt>,
 
     #[structopt(
         short = "m",
         parse(try_from_str = "parse_mines_range"),
         default_value = "10..50..5"
     )]
-    mines_range: RangeOpt,
+    pub mines_range: RangeOpt,
 
     #[structopt(
         short = "s",
         default_value = "133337",
         parse(try_from_str = "parse_seed")
     )]
-    metaseed: u32,
-}
+    pub metaseed: u32,
 
-impl Options {
-    pub fn into_game_batch(self) -> GameBatch<RangeOpt, RangeOpt> {
-        let Options {
-            count_per_spec,
-            dims_range,
-            mines_range,
-            metaseed
-        } = self;
+    #[structopt(
+        short = "t",
+        default_value = "native",
+        parse(try_from_str = "parse_server_type"),
+        help = "\"js\" or \"native\""
+    )]
+    pub server_type: ServerType,
 
-        GameBatch {
-            count_per_spec,
-            dims_range,
-            mines_range,
-            autoclear: true,
-            metaseed,
-            server_options: false
-        }
-    }
+    #[structopt(
+        short = "b",
+        help = "Save to database (only valid for native server type)"
+    )]
+    pub save_to_db: bool,
 }

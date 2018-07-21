@@ -51,6 +51,11 @@ pub struct NativeServer {
     game_state: GameState,
 }
 
+#[derive(Clone)]
+pub struct NativeServerConfig {
+    pub save_to_db: bool
+}
+
 struct TurnInfo {
     timestamp: DateTime<Utc>,
     clear_req: Vec<usize>,
@@ -160,14 +165,14 @@ impl NativeServer {
 }
 
 impl GameServer for NativeServer {
-    type Options = bool;
+    type Config = NativeServerConfig;
 
     fn new(
         dims: Vec<usize>,
         mines: usize,
         user_seed: Option<u32>,
         autoclear: bool,
-        store_turns: bool
+        config: NativeServerConfig
     ) -> Result<Self, GameError> {
         let size = dims.iter().fold(1, |s, &i| s * i);
         let cells_rem = size - mines;
@@ -224,7 +229,7 @@ impl GameServer for NativeServer {
             })
         };
 
-        let turns = if store_turns {
+        let turns = if config.save_to_db {
             Some(vec![
                 TurnInfo {
                     timestamp: Utc::now(),
