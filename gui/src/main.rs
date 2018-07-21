@@ -1,6 +1,6 @@
 #[macro_use] extern crate yew;
 
-use yew::{Component, ComponentLink}
+use yew::{Component, ComponentLink};
 
 struct GameViewer {
     games: Vec<Game>,
@@ -24,15 +24,15 @@ impl Renderable<Model> for Model {
     fn view(&self) -> Html<Self> {
         html! {
             // Render your model here
-            <button onclick=|_| yew::services::ConsoleService.log("aldskasa")>
-                { "Click me!" }
-            </button>
+            // <button onclick=|_| yew::services::ConsoleService.log("aldskasa")>
+            //     { "Click me!" }
+            // </button>
         }
     }
 }
 
 fn main() {
     yew::initialize();
-    App::<Model>::new().mount_to_body();
+    App::<GameViewer>::new().mount_to_body();
     yew::run_loop();
 }

@@ -1,12 +1,12 @@
 
 #[macro_use] extern crate structopt;
 extern crate chrono;
-extern crate mines_rs;
+extern crate mines_rs_core;
 
 mod options;
 
 use self::chrono::Utc;
-use mines_rs::{
+use mines_rs_core::{
     GameBatch,
     SpecResult,
     JsServerWrapper,

@@ -1,0 +1,9 @@
+[package]
+name = "mines-rs-cli"
+version = "0.1.0"
+authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
+
+[dependencies]
+chrono = { version = "^0.4", features = ["serde"] }
+mines-rs-core = { path = "../core" }
+structopt = "^0.2"

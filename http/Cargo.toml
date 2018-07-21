@@ -1,0 +1,8 @@
+[package]
+name = "mines-rs-http"
+version = "0.1.0"
+authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
+
+[dependencies]
+rocket = "^0.3"
+mines-rs-core = { path = "../core" }

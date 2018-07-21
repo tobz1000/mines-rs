@@ -4,4 +4,5 @@ version = "0.1.0"
 authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
 
 [dependencies]
+mines-rs-http = { path = "../http" }
 yew = { git = "https://github.com/DenisKolodin/yew.git" }

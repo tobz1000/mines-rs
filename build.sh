@@ -10,6 +10,12 @@ build_server() {
     cd "${PROJECT_ROOT}" && cargo build
 }
 
+build_cli() {
+    echo "Build CLI"
+    cd "${PROJECT_ROOT}/cli" && \
+    cargo build
+}
+
 build_gui() {
     echo "Build GUI"
     install_cargo_web && \
@@ -21,4 +27,4 @@ install_cargo_web() {
     cargo web -V &>/dev/null || (echo "Install cargo-web"; cargo install cargo-web)
 }
 
-build_server && build_gui
+build_server && (build_cli; build_gui)
