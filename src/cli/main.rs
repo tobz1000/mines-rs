@@ -1,4 +1,3 @@
-
 #[macro_use] extern crate structopt;
 extern crate chrono;
 extern crate mines_rs;
@@ -13,19 +12,24 @@ use mines_rs::{
     NativeServer,
     NativeServerConfig
 };
-use options::{Options, ServerType};
+use options::{Options, RunBatchOptions, HttpServerOptions, ServerType};
 use structopt::StructOpt;
 
 fn main() {
-    let Options {
-        count_per_spec,
-        dims_range,
-        mines_range,
-        metaseed,
-        server_type,
-        save_to_db
-    } = Options::from_args();
+    match Options::from_args() {
+        Options::RunBatch(options) => { run_batch(options); },
+        Options::HttpServer(options) => { run_server(options); },
+    }
+}
 
+fn run_batch(RunBatchOptions {
+    count_per_spec,
+    dims_range,
+    mines_range,
+    metaseed,
+    server_type,
+    save_to_db
+}: RunBatchOptions) {
     let batch = GameBatch {
         count_per_spec,
         dims_range,
@@ -68,3 +72,5 @@ fn main() {
 
     println!("Time: {:.2}s (avg {}µs/game/core)", dur_s, avg_us);
 }
+
+fn run_server(options: HttpServerOptions) {}
