@@ -1,5 +1,6 @@
 #[macro_use] extern crate structopt;
 extern crate chrono;
+extern crate mines_rpc;
 extern crate mines_rs;
 
 mod options;

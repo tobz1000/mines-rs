@@ -18,6 +18,7 @@ serde_derive = "^1.0"
 serde_json = "^1.0"
 structopt = "^0.2"
 wither = "^0.5"
+mines-rpc = { path = "mines-rpc" }
 
 [dev-dependencies]
 quickcheck = "^0.6"
@@ -29,3 +30,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "mines-rs-cli"
 path = "src/cli/main.rs"
+
+[workspace]
+members = ["mines-rpc"]

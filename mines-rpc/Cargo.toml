@@ -1,0 +1,12 @@
+[package]
+name = "mines-rpc"
+version = "0.1.0"
+authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
+
+[dependencies]
+grpcio = "*"
+protobuf = "*"
+futures = "*"
+
+[build-dependencies]
+protoc-grpcio = { path = "/home/toby/sources/protoc-grpcio" }
