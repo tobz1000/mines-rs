@@ -1,2 +1,2 @@
-src/mines.rs
-src/mines_grpc.rs
+src/protogen/*
+!src/protogen/mod.rs

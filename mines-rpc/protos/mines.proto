@@ -3,48 +3,49 @@ syntax = "proto3";
 package mines;
 
 service Mines {
-  rpc Batch(stream Request) returns (stream Response) {}
-}
-
-message Request {
-  oneof message {
-    GameBatch batch = 1;
-    Poll poll = 2;
-  }
-}
-
-message Poll {}
-
-message GameBatch {
-  uint64 count_per_spec = 1;
-  repeated uint64 mine_counts = 2;
-  repeated Dims dims = 3;
-  bool autoclear = 4;
-  uint32 metaseed = 5;
+    rpc Batch(Request) returns (Response) {}
 }
 
 message Dims {
-  repeated uint64 dim = 1;
+    repeated uint64 dim = 1;
+}
+
+message Request {
+    message GameBatch {
+        uint64 count_per_spec = 1;
+        repeated uint64 mine_counts = 2;
+        repeated Dims dims = 3;
+        bool autoclear = 4;
+        uint32 metaseed = 5;
+    }
+
+    message Poll {}
+
+    oneof message {
+        GameBatch batch = 1;
+        Poll poll = 2;
+    }
 }
 
 message Response {
-  oneof message {
-    BatchStatus status = 1;
-    BatchResults results = 2;
-  }
-}
+    message BatchStatus {
+        uint64 completed = 1;
+        uint64 total = 2;
+    }
 
-message BatchStatus {
-  uint64 completed = 1;
-  uint64 total = 2;
-}
+    message BatchResults {
+        message SpecResult {
+            Dims dims = 1;
+            uint64 mines = 2;
+            uint64 wins = 3;
+            uint64 played = 4;
+        }
 
-message BatchResults {
-  message SpecResult {
-    Dims dims = 1;
-    uint64 mines = 2;
-    uint64 wins = 3;
-    uint64 played = 4;
-  }
-  repeated SpecResult results = 1;
+        repeated SpecResult results = 1;
+    }
+
+    oneof message {
+        BatchStatus status = 1;
+        BatchResults results = 2;
+    }
 }

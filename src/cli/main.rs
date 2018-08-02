@@ -74,4 +74,6 @@ fn run_batch(RunBatchOptions {
     println!("Time: {:.2}s (avg {}µs/game/core)", dur_s, avg_us);
 }
 
-fn run_server(options: HttpServerOptions) {}
+fn run_server(options: HttpServerOptions) {
+    let server = mines_rpc::grpc_server(options.port).unwrap();
+}
