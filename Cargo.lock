@@ -456,6 +456,7 @@ version = "0.1.0"
 dependencies = [
  "bson 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.1.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper-sync 0.10.14 (git+https://github.com/tobz1000/hyper-sync)",
  "itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",

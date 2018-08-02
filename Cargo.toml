@@ -19,6 +19,7 @@ serde_json = "^1.0"
 structopt = "^0.2"
 wither = "^0.5"
 mines-rpc = { path = "mines-rpc" }
+futures = "*"
 
 [dev-dependencies]
 quickcheck = "^0.6"

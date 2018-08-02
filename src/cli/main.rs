@@ -2,6 +2,7 @@
 extern crate chrono;
 extern crate mines_rpc;
 extern crate mines_rs;
+extern crate futures;
 
 mod options;
 
@@ -15,6 +16,8 @@ use mines_rs::{
 };
 use options::{Options, RunBatchOptions, HttpServerOptions, ServerType};
 use structopt::StructOpt;
+use futures::sync::oneshot;
+use futures::Future;
 
 fn main() {
     match Options::from_args() {
@@ -76,4 +79,12 @@ fn run_batch(RunBatchOptions {
 
 fn run_server(options: HttpServerOptions) {
     let server = mines_rpc::grpc_server(options.port).unwrap();
+
+    for (host, port) in server.bind_addrs() {
+        println!("Server ready: listening on {}:{}", host, port);
+    }
+
+    // Wait indefinitely
+    let (_tx, rx) = oneshot::channel::<()>();
+    let _ = rx.wait();
 }

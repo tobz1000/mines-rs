@@ -104,7 +104,8 @@ pub enum ServerType { Js, Native }
 pub struct HttpServerOptions {
     #[structopt(
         short = "p",
+        default_value = "1067",
         help = "TCP port to listen on"
     )]
-    pub port: u32
+    pub port: u16
 }
