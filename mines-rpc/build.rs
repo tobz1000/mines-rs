@@ -1,7 +1,7 @@
 extern crate protoc_grpcio;
 
 const SRC_FILE: &str = "protos/mines.proto";
-const TARGET_DIR: &str = "src/proto-gen";
+const TARGET_DIR: &str = "src/protogen";
 
 fn main() {
     println!("cargo:rerun-if-changed={}", SRC_FILE);

@@ -34,3 +34,4 @@ path = "src/cli/main.rs"
 
 [workspace]
 members = ["mines-rpc"]
+exclude = ["gui"]

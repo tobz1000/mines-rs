@@ -475,10 +475,10 @@ dependencies = [
 
 [[package]]
 name = "mktemp"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "0.4.0"
+source = "git+https://github.com/Laaas/rs-mktemp/#09a0a68e1d195ab6132209d8bd74ff9e8f1425d3"
 dependencies = [
- "uuid 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -572,7 +572,7 @@ version = "0.2.0"
 dependencies = [
  "failure 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "grpcio-compiler 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mktemp 0.4.0 (git+https://github.com/Laaas/rs-mktemp/)",
  "protobuf 2.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "protobuf-codegen 2.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "protoc 2.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -986,11 +986,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "uuid"
-version = "0.1.18"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cfg-if 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1117,7 +1117,7 @@ dependencies = [
 "checksum memoffset 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0f9dc261e2b62d7a622bf416ea3c5245cdd5d9a7fcc428c0d06804dfce1775b3"
 "checksum mersenne_twister 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b85dbb2f68dfc026aac8f4c5196579896b10ee45e8b9a1a3b325fab3043d1cb0"
 "checksum mime 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "fe51c8699d2dc522bf8c1ebe26ea2193d151fb54bcdfd7d0318750c189994cd9"
-"checksum mktemp 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "77001ceb9eed65439f3dc2a2543f9ba1417d912686bf224a7738d0966e6dcd69"
+"checksum mktemp 0.4.0 (git+https://github.com/Laaas/rs-mktemp/)" = "<none>"
 "checksum mongodb 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)" = "73d0f8a0c95d998f162ce9899e4867c92e6e3f6376d18fb0114d3c227790c6de"
 "checksum nodrop 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "9a2228dca57108069a5262f2ed8bd2e82496d2e074a06d1ccc7ce1687b6ae0a2"
 "checksum num-integer 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)" = "e83d528d2677f0518c570baf2b7abdcf0cd2d248860b68507bdcb3e91d4c0cea"
@@ -1180,7 +1180,7 @@ dependencies = [
 "checksum unreachable 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "382810877fe448991dfc7f0dd6e3ae5d58088fd0ea5e35189655f84e6814fa56"
 "checksum url 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2a321979c09843d272956e73700d12c4e7d3d92b2ee112b31548aef0d4efc5a6"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
-"checksum uuid 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "78c590b5bd79ed10aad8fb75f078a59d8db445af6c743e55c4a53227fc01c13f"
+"checksum uuid 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e1436e58182935dcd9ce0add9ea0b558e8a87befe01c1a301e6020aeb0876363"
 "checksum vec_map 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "05c78687fb1a80548ae3250346c3db86a80a7cdd77bda190189f2d0a0987c81a"
 "checksum version_check 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "7716c242968ee87e5542f8021178248f267f295a5c4803beae8b8b7fd9bc6051"
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
