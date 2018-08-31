@@ -29,3 +29,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "mines-rs-cli"
 path = "src/cli/main.rs"
+
+[workspace]
+members = ["gui"]
