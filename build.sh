@@ -1,24 +1,23 @@
 #!/bin/bash
 
-# Script to build server & gui, until I find out a better Cargo-based solution.
-# [workspace] isn't suitable AFAIK because you can't specify different compile targets.
+# Convenience build script to install carg-web & build/run with necessary
+# configuration for wasm target
 
 PROJECT_ROOT=$(pwd)
 
-build_server() {
-    echo "Build server"
-    cd "${PROJECT_ROOT}" && cargo build
-}
-
-build_gui() {
-    echo "Build GUI"
-    install_cargo_web && \
-    cd "${PROJECT_ROOT}/gui" && \
-    cargo web build --target=wasm32-unknown-unknown
-}
+if [ $# -gt 0 ] && [ $1 == "-s" ]; then
+    CARGO_WEB_SUBCOMMAND="start"
+else
+    CARGO_WEB_SUBCOMMAND="build"
+fi
 
 install_cargo_web() {
-    cargo web -V &>/dev/null || (echo "Install cargo-web"; cargo install cargo-web)
+    cargo web -V &>/dev/null || (set -o xtrace; cargo install cargo-web)
 }
 
-build_server && build_gui
+build() {
+    set -o xtrace
+    cargo web $CARGO_WEB_SUBCOMMAND --target=wasm32-unknown-unknown
+}
+
+install_cargo_web && build
