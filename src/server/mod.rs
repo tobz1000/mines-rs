@@ -2,7 +2,7 @@ mod js;
 mod native;
 
 pub use self::js::JsServerWrapper;
-pub use self::native::{NativeServer, NativeServerConfig};
+pub use self::native::NativeServer;
 
 use ::GameError;
 use coords::Coords;
@@ -19,10 +19,6 @@ pub struct GameSpec {
 pub enum GameState { Ongoing, Win, Lose }
 
 pub trait GameServer: Sized {
-	type Config: Clone + Send + Sync;
-
-	fn new(spec: GameSpec, config: Self::Config) -> Result<Self, GameError>;
-
 	fn turn(
 		&mut self,
 		clear: Vec<Coords>,

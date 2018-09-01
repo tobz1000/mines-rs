@@ -9,8 +9,7 @@ use mines_rs::{
     GameBatch,
     SpecResult,
     JsServerWrapper,
-    NativeServer,
-    NativeServerConfig
+    NativeServer
 };
 use options::{Options, RunBatchOptions, HttpServerOptions, ServerType};
 use structopt::StructOpt;
@@ -42,10 +41,10 @@ fn run_batch(RunBatchOptions {
 
     let results = match server_type {
         ServerType::Js => {
-            batch.run::<JsServerWrapper>(()).unwrap()
+            batch.run(JsServerWrapper::new).unwrap()
         },
         ServerType::Native => {
-            batch.run::<NativeServer>(NativeServerConfig { save_to_db }).unwrap()
+            batch.run(|spec| NativeServer::new(spec, save_to_db)).unwrap()
         }
     };
 

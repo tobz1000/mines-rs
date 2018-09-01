@@ -51,11 +51,6 @@ pub struct NativeServer {
     game_state: GameState,
 }
 
-#[derive(Clone)]
-pub struct NativeServerConfig {
-    pub save_to_db: bool
-}
-
 struct TurnInfo {
     timestamp: DateTime<Utc>,
     clear_req: Vec<usize>,
@@ -67,6 +62,93 @@ struct TurnInfo {
 }
 
 impl NativeServer {
+    pub fn new(
+        GameSpec {
+            dims,
+            mines,
+            seed,
+            autoclear
+        }: GameSpec,
+        save_to_db: bool
+    ) -> Result<Self, GameError> {
+        let size = dims.iter().fold(1, |s, &i| s * i);
+        let cells_rem = size - mines;
+        let game_state = GameState::Ongoing;
+
+        if dims.len() == 0 || mines >= size {
+            panic!(
+                "Invalid game params: dims={:?} mines={:?} autoclear={:?}",
+                dims,
+                mines,
+                autoclear
+            );
+        }
+
+        let grid: GameGrid<Cell> = {
+            let mut rng: MT19937 = SeedableRng::from_seed(seed);
+
+            // Place mines randomly using Fisher-Yates shuffle
+            let mut mine_arr = vec![false; size];
+
+            for i in 0..size {
+                // Avoid rng-generation on first iteration to match the JS
+                // server's behaviour
+                let rand = if i == 0 {
+                    0
+                } else {
+                    rng.gen_range(0, (i + 1) as i32) as usize
+                };
+
+                if rand != i {
+                    mine_arr[i] = mine_arr[rand];
+                }
+
+                mine_arr[rand] = i < mines;
+            }
+
+            GameGrid::new(&dims, |i, surr| {
+                let surr_mine_count = surr.iter()
+                    .filter(|&&s| mine_arr[s])
+                    .count();
+
+                Cell {
+                    mine: mine_arr[i],
+                    action: CellAction::NoAction,
+                    surr_indices: surr,
+                    surr_mine_count
+                }
+            })
+        };
+
+        let turns = if save_to_db {
+            Some(vec![
+                TurnInfo {
+                    timestamp: Utc::now(),
+                    clear_req: Vec::new(),
+                    clear_actual: Vec::new(),
+                    flagged: Vec::new(),
+                    unflagged: Vec::new(),
+                    cells_rem,
+                    game_state,
+                }
+            ])
+        } else {
+            None
+        };
+
+        Ok(NativeServer {
+            created_at: Utc::now(),
+            dims,
+            mines,
+            seed,
+            autoclear,
+            grid,
+            cells_rem,
+            game_state,
+            turns
+        })
+    }
+
     #[allow(dead_code)]
     pub fn grid_repr(&self) -> Result<String, String> {
         if self.dims.len() > 2 {
@@ -165,95 +247,6 @@ impl NativeServer {
 }
 
 impl GameServer for NativeServer {
-    type Config = NativeServerConfig;
-
-    fn new(
-        GameSpec {
-            dims,
-            mines,
-            seed,
-            autoclear
-        }: GameSpec,
-        config: NativeServerConfig
-    ) -> Result<Self, GameError> {
-        let size = dims.iter().fold(1, |s, &i| s * i);
-        let cells_rem = size - mines;
-        let game_state = GameState::Ongoing;
-
-        if dims.len() == 0 || mines >= size {
-            panic!(
-                "Invalid game params: dims={:?} mines={:?} autoclear={:?}",
-                dims,
-                mines,
-                autoclear
-            );
-        }
-
-        let grid: GameGrid<Cell> = {
-            let mut rng: MT19937 = SeedableRng::from_seed(seed);
-
-            // Place mines randomly using Fisher-Yates shuffle
-            let mut mine_arr = vec![false; size];
-
-            for i in 0..size {
-                // Avoid rng-generation on first iteration to match the JS
-                // server's behaviour
-                let rand = if i == 0 {
-                    0
-                } else {
-                    rng.gen_range(0, (i + 1) as i32) as usize
-                };
-
-                if rand != i {
-                    mine_arr[i] = mine_arr[rand];
-                }
-
-                mine_arr[rand] = i < mines;
-            }
-
-            GameGrid::new(&dims, |i, surr| {
-                let surr_mine_count = surr.iter()
-                    .filter(|&&s| mine_arr[s])
-                    .count();
-
-                Cell {
-                    mine: mine_arr[i],
-                    action: CellAction::NoAction,
-                    surr_indices: surr,
-                    surr_mine_count
-                }
-            })
-        };
-
-        let turns = if config.save_to_db {
-            Some(vec![
-                TurnInfo {
-                    timestamp: Utc::now(),
-                    clear_req: Vec::new(),
-                    clear_actual: Vec::new(),
-                    flagged: Vec::new(),
-                    unflagged: Vec::new(),
-                    cells_rem,
-                    game_state,
-                }
-            ])
-        } else {
-            None
-        };
-
-        Ok(NativeServer {
-            created_at: Utc::now(),
-            dims,
-            mines,
-            seed,
-            autoclear,
-            grid,
-            cells_rem,
-            game_state,
-            turns
-        })
-    }
-
     fn turn(
         &mut self,
         clear: Vec<Coords>,

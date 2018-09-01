@@ -17,6 +17,6 @@ mod util;
 use std::error::Error;
 
 pub use game_batch::{GameBatch, SpecResult};
-pub use server::{NativeServer, NativeServerConfig, JsServerWrapper};
+pub use server::{NativeServer, JsServerWrapper};
 
 pub type GameError = Box<dyn Error + Sync + Send>;

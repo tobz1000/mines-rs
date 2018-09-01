@@ -22,6 +22,36 @@ pub struct JsServerWrapper {
 }
 
 impl JsServerWrapper {
+	pub fn new(GameSpec {
+		dims,
+		mines,
+		seed,
+		autoclear
+	}: GameSpec) -> Result<JsServerWrapper, GameError> {
+		let client_name = "RustyBoi";
+		let http_client = Client::new();
+		let base_url = "http://localhost:1066/server";
+
+		let status = Self::_action(
+			&base_url,
+			&NewGameRequest {
+				client: client_name,
+				seed: Some(seed),
+				dims,
+				mines,
+				autoclear,
+			},
+			&http_client,
+		)?;
+
+		Ok(JsServerWrapper {
+			base_url: base_url.to_owned(),
+			client_name: client_name.to_owned(),
+			status,
+			http_client,
+		})
+	}
+
 	fn action<R: JsServerRequest + Serialize>(
 		&mut self,
 		request: R,
@@ -73,41 +103,6 @@ impl JsServerWrapper {
 }
 
 impl<'a> GameServer for JsServerWrapper {
-	type Config = ();
-
-	fn new(
-        GameSpec {
-            dims,
-            mines,
-            seed,
-            autoclear
-        }: GameSpec,
-		_config: ()
-	) -> Result<JsServerWrapper, GameError> {
-		let client_name = "RustyBoi";
-		let http_client = Client::new();
-		let base_url = "http://localhost:1066/server";
-
-		let status = Self::_action(
-			&base_url,
-			&NewGameRequest {
-				client: client_name,
-				seed: Some(seed),
-				dims,
-				mines,
-				autoclear,
-			},
-			&http_client,
-		)?;
-
-		Ok(JsServerWrapper {
-			base_url: base_url.to_owned(),
-			client_name: client_name.to_owned(),
-			status,
-			http_client,
-		})
-	}
-
 	fn turn(
 		&mut self,
 		clear: Vec<Coords>,

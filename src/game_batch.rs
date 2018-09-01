@@ -65,7 +65,7 @@ impl<D, M> GameBatch<D, M>
 {
     pub fn run<G: GameServer>(
         self,
-        config: G::Config
+        new_game: impl Fn(GameSpec) -> Result<G, GameError> + Sync
     ) -> Result<Vec<SpecResult>, GameError> {
         let mut specs = Vec::new();
         let mut spec_results = Vec::new();
@@ -89,7 +89,7 @@ impl<D, M> GameBatch<D, M>
 
         let results: Vec<Result<GameResult, GameError>> = specs.into_par_iter()
             .map(|(spec_index, spec)| {
-                let game = G::new(spec, config.clone())?;
+                let game = new_game(spec)?;
 
                 let mut client = Client::new(game);
 
