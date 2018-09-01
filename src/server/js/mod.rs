@@ -6,7 +6,7 @@ mod api;
 
 use std::str;
 use coords::Coords;
-use server::{GameServer, GameState, CellInfo as NativeCellInfo};
+use server::{GameServer, GameState, GameSpec, CellInfo as NativeCellInfo};
 use ::GameError;
 use self::api::req::{JsServerRequest, TurnRequest, NewGameRequest};
 use self::api::resp::{ServerResponse, CellState, CellInfo as JsCellInfo};
@@ -76,10 +76,12 @@ impl<'a> GameServer for JsServerWrapper {
 	type Config = ();
 
 	fn new(
-		dims: Vec<usize>,
-		mines: usize,
-		seed: Option<u32>,
-		autoclear: bool,
+        GameSpec {
+            dims,
+            mines,
+            seed,
+            autoclear
+        }: GameSpec,
 		_config: ()
 	) -> Result<JsServerWrapper, GameError> {
 		let client_name = "RustyBoi";
@@ -90,7 +92,7 @@ impl<'a> GameServer for JsServerWrapper {
 			&base_url,
 			&NewGameRequest {
 				client: client_name,
-				seed,
+				seed: Some(seed),
 				dims,
 				mines,
 				autoclear,

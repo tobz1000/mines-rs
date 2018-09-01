@@ -9,7 +9,7 @@ use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
 use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
 use ::GameError;
-use server::{GameServer, GameState};
+use server::{GameServer, GameState, GameSpec};
 use client::Client;
 
 pub struct GameBatch<D, M> {
@@ -25,14 +25,6 @@ pub struct SpecResult {
     pub mines: usize,
     pub played: usize,
     pub wins: usize
-}
-
-#[derive(Debug)]
-struct GameSpec {
-    dims: Vec<usize>,
-    mines: usize,
-    seed: u32,
-    autoclear: bool,
 }
 
 #[derive(Clone)]
@@ -96,14 +88,8 @@ impl<D, M> GameBatch<D, M>
         }
 
         let results: Vec<Result<GameResult, GameError>> = specs.into_par_iter()
-            .map(|(spec_index, GameSpec { dims, mines, seed, autoclear })| {
-                let game = G::new(
-                    dims,
-                    mines,
-                    Some(seed),
-                    autoclear,
-                    config.clone()
-                )?;
+            .map(|(spec_index, spec)| {
+                let game = G::new(spec, config.clone())?;
 
                 let mut client = Client::new(game);
 

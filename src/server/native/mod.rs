@@ -8,13 +8,13 @@ mod db;
 
 use std::collections::HashSet;
 use ::GameError;
-use self::rand::{Rng, thread_rng, SeedableRng};
+use self::rand::{Rng, SeedableRng};
 use self::chrono::{DateTime, Utc};
 use self::itertools::Itertools;
 use self::mersenne_twister::MT19937;
 
 use coords::Coords;
-use server::{GameServer, GameState, CellInfo};
+use server::{GameServer, GameState, GameSpec, CellInfo};
 use game_grid::GameGrid;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -168,10 +168,12 @@ impl GameServer for NativeServer {
     type Config = NativeServerConfig;
 
     fn new(
-        dims: Vec<usize>,
-        mines: usize,
-        user_seed: Option<u32>,
-        autoclear: bool,
+        GameSpec {
+            dims,
+            mines,
+            seed,
+            autoclear
+        }: GameSpec,
         config: NativeServerConfig
     ) -> Result<Self, GameError> {
         let size = dims.iter().fold(1, |s, &i| s * i);
@@ -186,12 +188,6 @@ impl GameServer for NativeServer {
                 autoclear
             );
         }
-
-        let seed = if let Some(seed) = user_seed {
-            seed
-        } else {
-            thread_rng().gen()
-        };
 
         let grid: GameGrid<Cell> = {
             let mut rng: MT19937 = SeedableRng::from_seed(seed);

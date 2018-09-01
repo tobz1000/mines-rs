@@ -7,19 +7,21 @@ pub use self::native::{NativeServer, NativeServerConfig};
 use ::GameError;
 use coords::Coords;
 
+#[derive(Debug)]
+pub struct GameSpec {
+    pub dims: Vec<usize>,
+    pub mines: usize,
+    pub seed: u32,
+    pub autoclear: bool,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GameState { Ongoing, Win, Lose }
 
 pub trait GameServer: Sized {
 	type Config: Clone + Send + Sync;
 
-	fn new(
-		dims: Vec<usize>,
-		mines: usize,
-		seed: Option<u32>,
-		autoclear: bool,
-		config: Self::Config
-	) -> Result<Self, GameError>;
+	fn new(spec: GameSpec, config: Self::Config) -> Result<Self, GameError>;
 
 	fn turn(
 		&mut self,
