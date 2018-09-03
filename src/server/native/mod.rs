@@ -4,7 +4,7 @@ extern crate itertools;
 extern crate mersenne_twister;
 extern crate wither;
 
-mod db;
+mod db_inserter;
 
 use std::collections::HashSet;
 use ::GameError;
@@ -16,6 +16,8 @@ use self::mersenne_twister::MT19937;
 use coords::Coords;
 use server::{GameServer, GameState, GameSpec, CellInfo};
 use game_grid::GameGrid;
+
+pub use self::db_inserter::{DbInserter, MemDbInserter, MongoDbInserter};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum CellAction { NoAction, Flagged, Cleared }
@@ -39,7 +41,7 @@ impl Cell {
     }
 }
 
-pub struct NativeServer {
+pub struct NativeServer<'a> {
     created_at: DateTime<Utc>,
     dims: Vec<usize>,
     grid: GameGrid<Cell>,
@@ -49,6 +51,7 @@ pub struct NativeServer {
     turns: Option<Vec<TurnInfo>>,
     cells_rem: usize,
     game_state: GameState,
+    db_inserter: Option<&'a (dyn DbInserter + 'a)>,
 }
 
 struct TurnInfo {
@@ -61,7 +64,7 @@ struct TurnInfo {
     game_state: GameState,
 }
 
-impl NativeServer {
+impl<'a> NativeServer<'a> {
     pub fn new(
         GameSpec {
             dims,
@@ -69,7 +72,7 @@ impl NativeServer {
             seed,
             autoclear
         }: GameSpec,
-        save_to_db: bool
+        db_inserter: Option<&'a (dyn DbInserter + 'a)>
     ) -> Result<Self, GameError> {
         let size = dims.iter().fold(1, |s, &i| s * i);
         let cells_rem = size - mines;
@@ -120,7 +123,7 @@ impl NativeServer {
             })
         };
 
-        let turns = if save_to_db {
+        let turns = if db_inserter.is_some() {
             Some(vec![
                 TurnInfo {
                     timestamp: Utc::now(),
@@ -145,7 +148,8 @@ impl NativeServer {
             grid,
             cells_rem,
             game_state,
-            turns
+            turns,
+            db_inserter
         })
     }
 
@@ -246,7 +250,7 @@ impl NativeServer {
     }
 }
 
-impl GameServer for NativeServer {
+impl<'a> GameServer for NativeServer<'a> {
     fn turn(
         &mut self,
         clear: Vec<Coords>,
@@ -279,8 +283,10 @@ impl GameServer for NativeServer {
             turns.push(turn_info);
         }
 
-        if self.game_state != GameState::Ongoing && self.turns.is_some() {
-            db::insert_game(self)?;
+        if self.game_state() != GameState::Ongoing {
+            if let Some(inserter) = self.db_inserter.take() {
+                inserter.insert_game(self)?;
+            }
         }
 
         let client_cell_info = clear_actual.iter()

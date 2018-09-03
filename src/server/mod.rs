@@ -2,7 +2,12 @@ mod js;
 mod native;
 
 pub use self::js::JsServerWrapper;
-pub use self::native::NativeServer;
+pub use self::native::{
+	NativeServer,
+	DbInserter,
+	MongoDbInserter,
+	MemDbInserter
+};
 
 use ::GameError;
 use coords::Coords;

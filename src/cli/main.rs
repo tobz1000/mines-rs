@@ -9,7 +9,9 @@ use mines_rs::{
     GameBatch,
     SpecResult,
     JsServerWrapper,
-    NativeServer
+    NativeServer,
+    DbInserter,
+    MongoDbInserter
 };
 use options::{Options, RunBatchOptions, HttpServerOptions, ServerType};
 use structopt::StructOpt;
@@ -44,7 +46,16 @@ fn run_batch(RunBatchOptions {
             batch.run(JsServerWrapper::new).unwrap()
         },
         ServerType::Native => {
-            batch.run(|spec| NativeServer::new(spec, save_to_db)).unwrap()
+            let inserter;
+
+            let inserter_ref = if save_to_db {
+                inserter = MongoDbInserter;
+                Some(&inserter as &dyn DbInserter)
+            } else {
+                None
+            };
+
+            batch.run(|spec| { NativeServer::new(spec, inserter_ref) }).unwrap()
         }
     };
 
