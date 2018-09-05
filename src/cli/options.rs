@@ -47,15 +47,6 @@ fn parse_server_type(s: &str) -> Result<ServerType, &str> {
 }
 
 #[derive(StructOpt, Debug)]
-pub enum Options {
-    #[structopt(name = "batch")]
-    RunBatch(RunBatchOptions),
-
-    #[structopt(name = "server")]
-    HttpServer(HttpServerOptions)
-}
-
-#[derive(StructOpt, Debug)]
 pub struct RunBatchOptions {
     #[structopt(short = "c", default_value ="100")]
     pub count_per_spec: usize,
@@ -99,12 +90,3 @@ pub struct RunBatchOptions {
 
 #[derive(Debug)]
 pub enum ServerType { Js, Native }
-
-#[derive(StructOpt, Debug)]
-pub struct HttpServerOptions {
-    #[structopt(
-        short = "p",
-        help = "TCP port to listen on"
-    )]
-    pub port: u32
-}

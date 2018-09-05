@@ -13,24 +13,19 @@ use mines_rs::{
     DbInserter,
     MongoDbInserter
 };
-use options::{Options, RunBatchOptions, HttpServerOptions, ServerType};
+use options::{RunBatchOptions, ServerType};
 use structopt::StructOpt;
 
 fn main() {
-    match Options::from_args() {
-        Options::RunBatch(options) => { run_batch(options); },
-        Options::HttpServer(options) => { run_server(options); },
-    }
-}
+    let RunBatchOptions {
+        count_per_spec,
+        dims_range,
+        mines_range,
+        metaseed,
+        server_type,
+        save_to_db
+    } = RunBatchOptions::from_args();
 
-fn run_batch(RunBatchOptions {
-    count_per_spec,
-    dims_range,
-    mines_range,
-    metaseed,
-    server_type,
-    save_to_db
-}: RunBatchOptions) {
     let batch = GameBatch {
         count_per_spec,
         dims_range,
@@ -82,5 +77,3 @@ fn run_batch(RunBatchOptions {
 
     println!("Time: {:.2}s (avg {}µs/game/core)", dur_s, avg_us);
 }
-
-fn run_server(options: HttpServerOptions) {}
