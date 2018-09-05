@@ -39,7 +39,7 @@ fn parse_seed(s: &str) -> Result<u32, &str> {
 }
 
 fn parse_server_type(s: &str) -> Result<ServerType, &str> {
-    match s {
+    match s.to_lowercase().as_str() {
         "js" => Ok(ServerType::Js),
         "native" => Ok(ServerType::Native),
         _ => Err("Unknown server type")
