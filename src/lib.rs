@@ -17,12 +17,8 @@ mod util;
 use std::error::Error;
 
 pub use game_batch::{GameBatch, SpecResult};
-pub use server::{
-    JsServerWrapper,
-    NativeServer,
-    DbInserter,
-    MongoDbInserter,
-    MemDbInserter
-};
+pub use server::{NativeServer, DbInserter, MemDbInserter};
+#[cfg(feature = "mongodb_connector")] pub use server::MongoDbInserter;
+#[cfg(feature = "js_server_connector")] pub use server::JsServerWrapper;
 
 pub type GameError = Box<dyn Error + Sync + Send>;

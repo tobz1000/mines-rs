@@ -3,21 +3,35 @@ name = "mines-rs"
 version = "0.1.0"
 authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
 
+[features]
+# Command-line exectutable to play a batch of games
+cli = ["structopt", "js_server_connector", "mongodb_connector"]
+
+# Connection to alternative node.js server, as well as in-process native server
+js_server_connector = ["hyper-sync"]
+
+# Connection to MongoDB backenf for in-process native server
+mongodb_connector = ["bson", "mongodb", "wither"]
+
+# Build as a self-contained web app with GUI. Not compatible with "cli", "js_server_connector" or "mongodb_connector"
+webapp = ["yew"]
+
 [dependencies]
-bson = "0.10.0" # fixed to match mongodb, used by wither
 chrono = { version = "^0.4", features = ["serde"] }
-hyper-sync = { git = "https://github.com/tobz1000/hyper-sync" }
 itertools = "^0.7"
 lazy_static = "^1.0"
 mersenne_twister = "^1.0"
-mongodb = "^0.3"
 rand = "^0.4"
 rayon = "^1.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_json = "^1.0"
-structopt = "^0.2"
-wither = "^0.5"
+structopt = { version = "^0.2", optional = true }
+hyper-sync = { git = "https://github.com/tobz1000/hyper-sync", optional = true }
+bson = { version = "0.10.0", optional = true } # version fixed to match mongodb, used by wither
+mongodb = { version = "^0.3", optional = true }
+wither = { version = "^0.5", optional = true }
+yew = { git = "https://github.com/DenisKolodin/yew.git", optional = true }
 
 [dev-dependencies]
 quickcheck = "^0.6"
@@ -29,6 +43,9 @@ path = "src/lib.rs"
 [[bin]]
 name = "mines-rs-cli"
 path = "src/cli/main.rs"
+required-features = ["cli"]
 
-[workspace]
-members = ["gui"]
+[[bin]]
+name = "mines-rs-webapp"
+path = "src/webapp/main.rs"
+required-features = ["webapp"]

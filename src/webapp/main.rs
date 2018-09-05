@@ -1,22 +1,30 @@
-#[macro_use] extern crate yew;
+#[macro_use]
+extern crate yew;
+use yew::prelude::*;
 
-use yew::{Component, ComponentLink}
+struct Model { }
 
-struct GameViewer {
-    games: Vec<Game>,
-    current_id: Option<String>
+enum Msg {
+    DoIt,
 }
 
 impl Component for Model {
-    type Message = ();
+    // Some details omitted. Explore the examples to see more.
+
+    type Message = Msg;
     type Properties = ();
 
     fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
-        GameViewer { games: vec![], current_id: None }
+        Model { }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        true
+        match msg {
+            Msg::DoIt => {
+                // Update your model on events
+                true
+            }
+        }
     }
 }
 
@@ -24,9 +32,7 @@ impl Renderable<Model> for Model {
     fn view(&self) -> Html<Self> {
         html! {
             // Render your model here
-            <button onclick=|_| yew::services::ConsoleService.log("aldskasa")>
-                { "Click me!" }
-            </button>
+            <button onclick=|_| Msg::DoIt,>{ "Click me!" }</button>
         }
     }
 }

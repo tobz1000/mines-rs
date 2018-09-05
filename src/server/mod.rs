@@ -1,13 +1,9 @@
-mod js;
+#[cfg(feature = "js_server_connector")] mod js;
 mod native;
 
-pub use self::js::JsServerWrapper;
-pub use self::native::{
-	NativeServer,
-	DbInserter,
-	MongoDbInserter,
-	MemDbInserter
-};
+#[cfg(feature = "js_server_connector")] pub use self::js::JsServerWrapper;
+pub use self::native::{NativeServer, DbInserter, MemDbInserter};
+#[cfg(feature = "mongodb_connector")] pub use self::native::MongoDbInserter;
 
 use ::GameError;
 use coords::Coords;

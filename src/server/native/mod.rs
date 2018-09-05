@@ -2,7 +2,6 @@ extern crate rand;
 extern crate chrono;
 extern crate itertools;
 extern crate mersenne_twister;
-extern crate wither;
 
 mod db_inserter;
 
@@ -17,7 +16,8 @@ use coords::Coords;
 use server::{GameServer, GameState, GameSpec, CellInfo};
 use game_grid::GameGrid;
 
-pub use self::db_inserter::{DbInserter, MemDbInserter, MongoDbInserter};
+pub use self::db_inserter::{DbInserter, MemDbInserter};
+#[cfg(feature = "mongodb_connector")] pub use self::db_inserter::MongoDbInserter;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum CellAction { NoAction, Flagged, Cleared }
