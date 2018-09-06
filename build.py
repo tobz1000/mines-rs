@@ -5,6 +5,7 @@ import subprocess
 
 valid_features_native = [
     ["cli"],
+    ["native_support"],
     ["js_server_connector"],
     ["mongodb_connector"],
     ["js_server_connector", "mongodb_connector"],
@@ -69,7 +70,8 @@ def check_valid_features():
         check_args = [
             "cargo",
             "build" if wasm else "check",
-            "--features={}".format(",".join(features))
+            "--features={}".format(",".join(features)),
+            "--no-default-features"
         ]
 
         if wasm:

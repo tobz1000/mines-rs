@@ -1,5 +1,5 @@
 extern crate rand;
-extern crate chrono;
+#[cfg(feature = "chrono")] extern crate chrono;
 extern crate itertools;
 extern crate mersenne_twister;
 
@@ -8,7 +8,7 @@ mod db_inserter;
 use std::collections::HashSet;
 use ::GameError;
 use self::rand::{Rng, SeedableRng};
-use self::chrono::{DateTime, Utc};
+#[cfg(feature = "chrono")] use self::chrono::{DateTime, Utc};
 use self::itertools::Itertools;
 use self::mersenne_twister::MT19937;
 
@@ -42,7 +42,7 @@ impl Cell {
 }
 
 pub struct NativeServer<'a> {
-    created_at: DateTime<Utc>,
+    #[cfg(feature = "chrono")] created_at: DateTime<Utc>,
     dims: Vec<usize>,
     grid: GameGrid<Cell>,
     mines: usize,
@@ -55,7 +55,7 @@ pub struct NativeServer<'a> {
 }
 
 struct TurnInfo {
-    timestamp: DateTime<Utc>,
+    #[cfg(feature = "chrono")] timestamp: DateTime<Utc>,
     clear_req: Vec<usize>,
     clear_actual: Vec<usize>,
     flagged: Vec<usize>,
@@ -126,7 +126,7 @@ impl<'a> NativeServer<'a> {
         let turns = if db_inserter.is_some() {
             Some(vec![
                 TurnInfo {
-                    timestamp: Utc::now(),
+                    #[cfg(feature = "chrono")] timestamp: Utc::now(),
                     clear_req: Vec::new(),
                     clear_actual: Vec::new(),
                     flagged: Vec::new(),
@@ -140,7 +140,7 @@ impl<'a> NativeServer<'a> {
         };
 
         Ok(NativeServer {
-            created_at: Utc::now(),
+            #[cfg(feature = "chrono")] created_at: Utc::now(),
             dims,
             mines,
             seed,
@@ -271,7 +271,7 @@ impl<'a> GameServer for NativeServer<'a> {
 
         if let Some(ref mut turns) = self.turns {
             let turn_info = TurnInfo {
-                timestamp: Utc::now(),
+                #[cfg(feature = "chrono")] timestamp: Utc::now(),
                 clear_req: clear_req_indices,
                 clear_actual: clear_actual.clone(),
                 flagged: flag_actual,

@@ -1,13 +1,13 @@
 extern crate rand;
 extern crate mersenne_twister;
 extern crate itertools;
-extern crate rayon;
+#[cfg(feature = "rayon")] extern crate rayon;
 
 use std::iter::repeat;
 use self::rand::{Rng, SeedableRng};
 use self::mersenne_twister::MT19937;
 use self::itertools::Itertools;
-use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
+#[cfg(feature = "rayon")] use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
 use ::GameError;
 use server::{GameServer, GameState, GameSpec};
 use client::Client;
@@ -20,6 +20,7 @@ pub struct GameBatch<D, M> {
     pub metaseed: u32,
 }
 
+#[derive(Debug)]
 pub struct SpecResult {
     pub dims: Vec<usize>,
     pub mines: usize,
@@ -87,7 +88,13 @@ impl<D, M> GameBatch<D, M>
             specs.push((i, spec));
         }
 
-        let results: Vec<Result<GameResult, GameError>> = specs.into_par_iter()
+        #[cfg(feature = "rayon")]
+        let specs_iter = specs.into_par_iter();
+
+        #[cfg(not(feature = "rayon"))]
+        let specs_iter = specs.into_iter();
+
+        let results: Vec<Result<GameResult, GameError>> = specs_iter
             .map(|(spec_index, spec)| {
                 let game = new_game(spec)?;
 

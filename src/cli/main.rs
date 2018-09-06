@@ -50,7 +50,7 @@ fn main() {
                 None
             };
 
-            batch.run(|spec| { NativeServer::new(spec, inserter_ref) }).unwrap()
+            batch.run(|spec| NativeServer::new(spec, inserter_ref)).unwrap()
         }
     };
 

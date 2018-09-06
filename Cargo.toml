@@ -4,28 +4,31 @@ version = "0.1.0"
 authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
 
 [features]
-# Command-line exectutable to play a batch of games
-cli = ["structopt", "js_server_connector", "mongodb_connector"]
+# Command-line executable to play a batch of games
+cli = ["structopt", "native_support"]
+
+# Features which will crash a wasm build at runtime
+native_support = ["chrono", "rayon", "js_server_connector", "mongodb_connector"]
 
 # Connection to alternative node.js server, as well as in-process native server
-js_server_connector = ["hyper-sync"]
+js_server_connector = ["chrono", "hyper-sync"]
 
 # Connection to MongoDB backenf for in-process native server
-mongodb_connector = ["bson", "mongodb", "wither"]
+mongodb_connector = ["chrono", "bson", "mongodb", "wither"]
 
-# Build as a self-contained web app with GUI. Not compatible with "cli", "js_server_connector" or "mongodb_connector"
+# Build as a self-contained web app with GUI. Not compatible with native-only features.
 webapp = ["yew"]
 
 [dependencies]
-chrono = { version = "^0.4", features = ["serde"] }
 itertools = "^0.7"
 lazy_static = "^1.0"
 mersenne_twister = "^1.0"
 rand = "^0.4"
-rayon = "^1.0"
 serde = "^1.0"
 serde_derive = "^1.0"
 serde_json = "^1.0"
+rayon = { version = "^1.0", optional = true }
+chrono = { version = "^0.4", features = ["serde"], optional = true }
 structopt = { version = "^0.2", optional = true }
 hyper-sync = { git = "https://github.com/tobz1000/hyper-sync", optional = true }
 bson = { version = "0.10.0", optional = true } # version fixed to match mongodb, used by wither
