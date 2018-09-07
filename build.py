@@ -3,15 +3,17 @@ import argparse
 import sys
 import subprocess
 
-valid_features_native = [
-    ["cli"],
-    ["native_support"],
-    ["js_server_connector"],
-    ["mongodb_connector"],
-    ["js_server_connector", "mongodb_connector"],
+native_build_configs = [
+    ["--bin=mines-rs-cli", "--features=cli"],
+    ["--lib", "--features=native_support"],
+    ["--lib", "--features=js_server_connector"],
+    ["--lib", "--features=mongodb_connector"],
+    ["--lib", "--features=js_server_connector,mongodb_connector"],
 ]
 
-valid_features_wasm = [["webapp"]]
+wasm_build_configs = [
+    ["--bin=mines-rs-webapp", "--features=webapp"]
+]
 
 parser = argparse.ArgumentParser()
 
@@ -66,24 +68,16 @@ def build_webapp():
     ])
 
 def check_valid_features():
-    def check(features, wasm):
-        check_args = [
-            "cargo",
-            "build" if wasm else "check",
-            "--features={}".format(",".join(features)),
-            "--no-default-features"
-        ]
+    native_cmd = ["cargo", "check", "--no-default-features"]
 
-        if wasm:
-            check_args.append("--target=wasm32-unknown-unknown")
+    wasm_cmd = ["cargo", "web", "build", "--no-default-features", "--target=wasm32-unknown-unknown"]
 
-        call(check_args)
-
-    for features in valid_features_native:
-        check(features, wasm=False)
-
-    for features in valid_features_wasm:
-        check(features, wasm=True)
+    for check_cmd, target_configs in [
+        (native_cmd, native_build_configs),
+        (wasm_cmd, wasm_build_configs)
+    ]:
+        for append_args in target_configs:
+            call(check_cmd + append_args)
 
 if __name__ == "__main__":
     try:
