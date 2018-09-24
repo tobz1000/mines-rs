@@ -47,7 +47,11 @@ def check_install_cargo_web():
     if check_install_cargo_web.checked:
         return
 
-    if subprocess.call(["cargo", "web", "-V"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) != 0:
+    if subprocess.call(
+        ["cargo", "web", "-V"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    ) != 0:
         cargo(["install", "cargo-web"])
 
     check_install_cargo_web.checked = True
@@ -68,6 +72,7 @@ def cargo_web(args):
 def build_cli():
     cargo([
         "run" if args.run else "build",
+        "--release",
         "--features=cli",
         "--bin=mines-rs-cli"
     ])
