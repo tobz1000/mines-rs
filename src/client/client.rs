@@ -11,19 +11,19 @@ struct ServerActions {
     to_flag: Vec<Coords>
 }
 
-pub struct Client<G: GameServer> {
+pub struct Client<'a, G: GameServer + 'a> {
     grid: GameGrid<Cell>,
-    server: G
+    server: &'a mut G
 }
 
-impl<G: GameServer> Client<G> {
-    pub fn new(server: G) -> Self {
+impl<'a, G: GameServer> Client<'a, G> {
+    pub fn new(server: &'a mut G) -> Self {
         let grid = GameGrid::new(server.dims(), Cell::new);
 
         Client { grid, server }
     }
 
-    pub fn play(&mut self) -> Result<GameState, GameError> {
+    pub fn play(&mut self) -> Result<(), GameError> {
         let mut to_clear = vec![Coords(
             self.server.dims().iter().map(|&d| d / 2).collect()
         )];
@@ -40,7 +40,7 @@ impl<G: GameServer> Client<G> {
             to_flag = next_actions.to_flag;
         }
 
-        Ok(self.server.game_state())
+        Ok(())
     }
 
     fn next_turn(&mut self, clear_actual: &[CellInfo]) -> ServerActions {

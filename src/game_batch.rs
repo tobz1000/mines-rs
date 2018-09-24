@@ -96,11 +96,14 @@ impl<D, M> GameBatch<D, M>
 
         let results: Vec<Result<GameResult, GameError>> = specs_iter
             .map(|(spec_index, spec)| {
-                let game = new_game(spec)?;
+                let mut game = new_game(spec)?;
 
-                let mut client = Client::new(game);
+                {
+                    let mut client = Client::new(&mut game);
+                    client.play()?;
+                }
 
-                let win = client.play()? == GameState::Win;
+                let win = game.game_state() == GameState::Win;
 
                 Ok(GameResult { win, spec_index })
             })
