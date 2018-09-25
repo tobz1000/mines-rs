@@ -21,11 +21,12 @@ pub struct GameBatch<D, M> {
 }
 
 #[derive(Debug)]
-pub struct SpecResult {
+pub struct SpecResult<I> {
     pub dims: Vec<usize>,
     pub mines: usize,
     pub played: usize,
-    pub wins: usize
+    pub wins: usize,
+    pub info: Vec<I>
 }
 
 #[derive(Clone)]
@@ -35,9 +36,10 @@ struct GridSpec {
     mines: usize
 }
 
-struct GameResult {
+struct GameResult<I> {
     spec_index: usize,
-    win: bool
+    win: bool,
+    info: I
 }
 
 struct GameSpecs<G: Iterator<Item=GridSpec>, R: Rng> {
@@ -64,10 +66,11 @@ impl<D, M> GameBatch<D, M>
           M: IntoIterator<Item=usize>,
           <M as IntoIterator>::IntoIter: Clone
 {
-    pub fn run<G: GameServer>(
+    pub fn run<G: GameServer, I: Send>(
         self,
-        new_game: impl Fn(GameSpec) -> Result<G, GameError> + Sync
-    ) -> Result<Vec<SpecResult>, GameError> {
+        new_game: impl Fn(GameSpec) -> Result<G, GameError> + Sync,
+        game_result_info: impl Fn(G) -> I + Sync
+    ) -> Result<Vec<SpecResult<I>>, GameError> {
         let mut specs = Vec::new();
         let mut spec_results = Vec::new();
 
@@ -81,7 +84,8 @@ impl<D, M> GameBatch<D, M>
                     dims: spec.dims.clone(),
                     mines: spec.mines,
                     played: 0,
-                    wins: 0
+                    wins: 0,
+                    info: Vec::new()
                 })
             }
 
@@ -94,7 +98,7 @@ impl<D, M> GameBatch<D, M>
         #[cfg(not(feature = "rayon"))]
         let specs_iter = specs.into_iter();
 
-        let results: Vec<Result<GameResult, GameError>> = specs_iter
+        let results: Vec<Result<GameResult<I>, GameError>> = specs_iter
             .map(|(spec_index, spec)| {
                 let mut game = new_game(spec)?;
 
@@ -104,18 +108,24 @@ impl<D, M> GameBatch<D, M>
                 }
 
                 let win = game.game_state() == GameState::Win;
+                let info = game_result_info(game);
 
-                Ok(GameResult { win, spec_index })
+                // Ok((spec_index, game))
+                Ok(GameResult { spec_index, win, info })
             })
             .collect();
 
         for result in results {
-            let GameResult { spec_index, win } = result?;
+            let GameResult { spec_index, win, info } = result?;
+            let spec_result = &mut spec_results[spec_index];
 
-            spec_results[spec_index].played += 1;
+            spec_result.played += 1;
+
             if win {
-                spec_results[spec_index].wins += 1;
+                spec_result.wins += 1;
             }
+
+            spec_result.info.push(info);
         }
 
         Ok(spec_results)

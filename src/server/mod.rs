@@ -19,9 +19,10 @@ pub struct GameSpec {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GameState { Ongoing, Win, Lose }
 
+// Interface for game client to interact with a single game-presenting server.
 pub trait GameServer: Sized {
 	fn turn(
-		&mut self,
+	&mut self,
 		clear: Vec<Coords>,
 		flag: Vec<Coords>,
 		unflag: Vec<Coords>,

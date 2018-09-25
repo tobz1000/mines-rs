@@ -38,7 +38,7 @@ fn main() {
 
     let results = match server_type {
         ServerType::Js => {
-            batch.run(JsServerWrapper::new).unwrap()
+            batch.run(JsServerWrapper::new, |_game| ()).unwrap()
         },
         ServerType::Native => {
             let inserter;
@@ -50,7 +50,10 @@ fn main() {
                 None
             };
 
-            batch.run(|spec| NativeServer::new(spec, inserter_ref)).unwrap()
+            batch.run(
+                |spec| NativeServer::new(spec, inserter_ref),
+                |_game| ()
+            ).unwrap()
         }
     };
 
@@ -58,7 +61,7 @@ fn main() {
 
     println!("Dims\t\tMines\tWins/Played");
 
-    for SpecResult { dims, mines, wins, played } in results {
+    for SpecResult { dims, mines, wins, played, info: _ } in results {
         let win_perc = wins as f64 * 100f64 / count_per_spec as f64;
         println!(
             "{:?}\t{}:\t{}/{}\t({:.0}%)",
