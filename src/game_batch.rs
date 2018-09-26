@@ -69,7 +69,7 @@ impl<D, M> GameBatch<D, M>
     pub fn run<G: GameServer, I: Send>(
         self,
         new_game: impl Fn(GameSpec) -> Result<G, GameError> + Sync,
-        game_result_info: impl Fn(G) -> I + Sync
+        use_game_result: impl Fn(G) -> I + Sync
     ) -> Result<Vec<SpecResult<I>>, GameError> {
         let mut specs = Vec::new();
         let mut spec_results = Vec::new();
@@ -108,9 +108,8 @@ impl<D, M> GameBatch<D, M>
                 }
 
                 let win = game.game_state() == GameState::Win;
-                let info = game_result_info(game);
+                let info = use_game_result(game);
 
-                // Ok((spec_index, game))
                 Ok(GameResult { spec_index, win, info })
             })
             .collect();

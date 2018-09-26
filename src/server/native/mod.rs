@@ -3,8 +3,6 @@ extern crate rand;
 extern crate itertools;
 extern crate mersenne_twister;
 
-mod db_inserter;
-
 use std::collections::HashSet;
 use ::GameError;
 use self::rand::{Rng, SeedableRng};
@@ -16,18 +14,15 @@ use coords::Coords;
 use server::{GameServer, GameState, GameSpec, CellInfo};
 use game_grid::GameGrid;
 
-pub use self::db_inserter::{DbInserter, MemDbInserter};
-#[cfg(feature = "mongodb_connector")] pub use self::db_inserter::MongoDbInserter;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum CellAction { NoAction, Flagged, Cleared }
+pub enum CellAction { NoAction, Flagged, Cleared }
 
 #[derive(Debug)]
-struct Cell {
-    mine: bool,
-    action: CellAction,
-    surr_indices: HashSet<usize>,
-    surr_mine_count: usize
+pub struct Cell {
+    pub mine: bool,
+    pub action: CellAction,
+    pub surr_indices: HashSet<usize>,
+    pub surr_mine_count: usize
 }
 
 impl Cell {
@@ -41,30 +36,29 @@ impl Cell {
     }
 }
 
-pub struct NativeServer<'a> {
-    #[cfg(feature = "chrono")] created_at: DateTime<Utc>,
-    dims: Vec<usize>,
-    grid: GameGrid<Cell>,
-    mines: usize,
-    seed: u32,
-    autoclear: bool,
-    turns: Option<Vec<TurnInfo>>,
-    cells_rem: usize,
-    game_state: GameState,
-    db_inserter: Option<&'a (dyn DbInserter + 'a)>,
+pub struct NativeServer {
+    #[cfg(feature = "chrono")] pub created_at: DateTime<Utc>,
+    pub dims: Vec<usize>,
+    pub grid: GameGrid<Cell>,
+    pub mines: usize,
+    pub seed: u32,
+    pub autoclear: bool,
+    pub turns: Option<Vec<TurnInfo>>,
+    pub cells_rem: usize,
+    pub game_state: GameState,
 }
 
-struct TurnInfo {
-    #[cfg(feature = "chrono")] timestamp: DateTime<Utc>,
-    clear_req: Vec<usize>,
-    clear_actual: Vec<usize>,
-    flagged: Vec<usize>,
-    unflagged: Vec<usize>,
-    cells_rem: usize,
-    game_state: GameState,
+pub struct TurnInfo {
+    #[cfg(feature = "chrono")] pub timestamp: DateTime<Utc>,
+    pub clear_req: Vec<usize>,
+    pub clear_actual: Vec<usize>,
+    pub flagged: Vec<usize>,
+    pub unflagged: Vec<usize>,
+    pub cells_rem: usize,
+    pub game_state: GameState,
 }
 
-impl<'a> NativeServer<'a> {
+impl NativeServer {
     pub fn new(
         GameSpec {
             dims,
@@ -72,7 +66,7 @@ impl<'a> NativeServer<'a> {
             seed,
             autoclear
         }: GameSpec,
-        db_inserter: Option<&'a (dyn DbInserter + 'a)>
+        store_turns: bool
     ) -> Result<Self, GameError> {
         let size = dims.iter().fold(1, |s, &i| s * i);
         let cells_rem = size - mines;
@@ -123,7 +117,7 @@ impl<'a> NativeServer<'a> {
             })
         };
 
-        let turns = if db_inserter.is_some() {
+        let turns = if store_turns {
             Some(vec![
                 TurnInfo {
                     #[cfg(feature = "chrono")] timestamp: Utc::now(),
@@ -148,8 +142,7 @@ impl<'a> NativeServer<'a> {
             grid,
             cells_rem,
             game_state,
-            turns,
-            db_inserter
+            turns
         })
     }
 
@@ -250,7 +243,7 @@ impl<'a> NativeServer<'a> {
     }
 }
 
-impl<'a> GameServer for NativeServer<'a> {
+impl GameServer for NativeServer {
     fn turn(
         &mut self,
         clear: Vec<Coords>,
@@ -281,12 +274,6 @@ impl<'a> GameServer for NativeServer<'a> {
             };
 
             turns.push(turn_info);
-        }
-
-        if self.game_state() != GameState::Ongoing {
-            if let Some(inserter) = self.db_inserter.take() {
-                inserter.insert_game(self)?;
-            }
         }
 
         let client_cell_info = clear_actual.iter()

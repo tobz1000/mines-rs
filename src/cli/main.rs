@@ -10,8 +10,7 @@ use mines_rs::{
     SpecResult,
     JsServerWrapper,
     NativeServer,
-    DbInserter,
-    MongoDbInserter
+    mongodb_connector
 };
 use options::{RunBatchOptions, ServerType};
 use structopt::StructOpt;
@@ -36,25 +35,22 @@ fn main() {
 
     let start = Utc::now();
 
-    let results = match server_type {
-        ServerType::Js => {
+    let results = match (server_type, save_to_db) {
+        (ServerType::Native, false) => {
+            batch.run(|spec| NativeServer::new(spec, false), |_game| ()).unwrap()
+        },
+        (ServerType::Native, true) => {
+            batch.run(
+                |spec| NativeServer::new(spec, true),
+                |game| { mongodb_connector::insert_game(&game).unwrap(); }
+            ).unwrap()
+        },
+        (ServerType::Js, false) => {
             batch.run(JsServerWrapper::new, |_game| ()).unwrap()
         },
-        ServerType::Native => {
-            let inserter;
-
-            let inserter_ref = if save_to_db {
-                inserter = MongoDbInserter;
-                Some(&inserter as &dyn DbInserter)
-            } else {
-                None
-            };
-
-            batch.run(
-                |spec| NativeServer::new(spec, inserter_ref),
-                |_game| ()
-            ).unwrap()
-        }
+        (ServerType::Js, true) => {
+            panic!("save_to_db command line option is invalid for JS server")
+        },
     };
 
     let game_count = results.len() * count_per_spec;

@@ -13,12 +13,12 @@ mod game_grid;
 mod client;
 mod game_batch;
 mod util;
+#[cfg(feature = "mongodb_connector")] pub mod mongodb_connector;
 
 use std::error::Error;
 
 pub use game_batch::{GameBatch, SpecResult};
-pub use server::{NativeServer, DbInserter, MemDbInserter};
-#[cfg(feature = "mongodb_connector")] pub use server::MongoDbInserter;
-#[cfg(feature = "js_server_connector")] pub use server::JsServerWrapper;
+pub use server::native::NativeServer;
+#[cfg(feature = "js_server_connector")] pub use server::js::JsServerWrapper;
 
 pub type GameError = Box<dyn Error + Sync + Send>;
