@@ -7,6 +7,7 @@
 #[macro_use] extern crate lazy_static;
 #[cfg(test)] #[macro_use] extern crate quickcheck;
 
+#[cfg(feature = "webapp")] #[macro_use] extern crate stdweb;
 mod server;
 mod coords;
 mod game_grid;

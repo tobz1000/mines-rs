@@ -48,6 +48,7 @@ pub struct NativeServer {
     pub game_state: GameState,
 }
 
+#[derive(Debug)]
 pub struct TurnInfo {
     #[cfg(feature = "chrono")] pub timestamp: DateTime<Utc>,
     pub clear_req: Vec<usize>,

@@ -443,9 +443,10 @@ dependencies = [
  "serde 1.0.69 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.69 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
+ "stdweb 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "wither 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "yew 0.5.0 (git+https://github.com/DenisKolodin/yew.git)",
+ "yew 0.5.0",
 ]
 
 [[package]]
@@ -1033,7 +1034,6 @@ dependencies = [
 [[package]]
 name = "yew"
 version = "0.5.0"
-source = "git+https://github.com/DenisKolodin/yew.git#e167a00565a4b9274051e2aa9b6eee033996f1b3"
 dependencies = [
  "anymap 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bincode 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1176,4 +1176,3 @@ dependencies = [
 "checksum wincolor 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "eeb06499a3a4d44302791052df005d5232b927ed1a9658146d842165c4de7767"
 "checksum winutil 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7daf138b6b14196e3830a588acf1e86966c694d3e8fb026fb105b8b5dca07e6e"
 "checksum wither 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "86a3960fe5c3c76f2e78270b103012f366bf31b0aae1ab2563f08299bbe2b617"
-"checksum yew 0.5.0 (git+https://github.com/DenisKolodin/yew.git)" = "<none>"

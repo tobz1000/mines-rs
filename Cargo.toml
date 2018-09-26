@@ -17,7 +17,7 @@ js_server_connector = ["chrono", "hyper-sync"]
 mongodb_connector = ["chrono", "bson", "mongodb", "wither"]
 
 # Build as a self-contained web app with GUI. Not compatible with native-only features.
-webapp = ["yew"]
+webapp = ["yew", "stdweb"]
 
 [dependencies]
 itertools = "^0.7"
@@ -34,7 +34,8 @@ hyper-sync = { git = "https://github.com/tobz1000/hyper-sync", optional = true }
 bson = { version = "0.10.0", optional = true } # version fixed to match mongodb, used by wither
 mongodb = { version = "^0.3", optional = true }
 wither = { version = "^0.5", optional = true }
-yew = { git = "https://github.com/DenisKolodin/yew.git", optional = true }
+yew = { path = "/home/toby/sources/yew", optional = true }
+stdweb = { version = "*", optional = true }
 
 [dev-dependencies]
 quickcheck = "^0.6"

@@ -20,7 +20,7 @@ pub struct GameBatch<D, M> {
     pub metaseed: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct SpecResult<I> {
     pub dims: Vec<usize>,
     pub mines: usize,
@@ -28,6 +28,10 @@ pub struct SpecResult<I> {
     pub wins: usize,
     pub info: Vec<I>
 }
+
+type EmptySpecResult = SpecResult<()>;
+
+#[cfg(feature = "webapp")] js_serializable!( EmptySpecResult );
 
 #[derive(Clone)]
 struct GridSpec {
