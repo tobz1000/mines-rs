@@ -52,12 +52,13 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Coords<T> {
 mod test {
     extern crate quickcheck;
 
+    use std::mem::size_of;
     use self::quickcheck::TestResult;
     use coords::Coords;
 
     quickcheck! {
         fn test_coords(i: usize, dims: Vec<u8>) -> TestResult {
-            const DIMS_MAX: usize = 8;
+            const DIMS_MAX: usize = size_of::<usize>() / size_of::<u8>();
 
             let dims: Vec<usize> = dims.into_iter()
                 .filter(|&d| d > 0)
@@ -65,7 +66,9 @@ mod test {
                 .take(DIMS_MAX)
                 .collect();
 
-            if i >= dims.len() {
+            let index_max: usize = dims.iter().product();
+
+            if i >= index_max {
                 return TestResult::discard();
             }
 
