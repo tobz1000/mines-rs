@@ -12,6 +12,7 @@ use ::GameError;
 use server::{GameServer, GameState, GameSpec};
 use client::Client;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GameBatch<D, M> {
     pub count_per_spec: usize,
     pub dims_range: Vec<D>,
@@ -20,7 +21,7 @@ pub struct GameBatch<D, M> {
     pub metaseed: u32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SpecResult<I> {
     pub dims: Vec<usize>,
     pub mines: usize,
@@ -159,5 +160,27 @@ impl<D, M> GameBatch<D, M>
         let rng: MT19937 = SeedableRng::from_seed(metaseed);
 
         GameSpecs { grid_specs, autoclear, rng }
+    }
+
+    pub fn into_serializable(self) -> GameBatch<Vec<usize>, Vec<usize>> {
+        let GameBatch {
+            count_per_spec,
+            dims_range,
+            mines_range,
+            autoclear,
+            metaseed
+        } = self;
+        let dims_range = dims_range.into_iter()
+            .map(|i| i.into_iter().collect())
+            .collect();
+        let mines_range = mines_range.into_iter().collect();
+
+        GameBatch {
+            count_per_spec,
+            dims_range,
+            mines_range,
+            autoclear,
+            metaseed
+        }
     }
 }
