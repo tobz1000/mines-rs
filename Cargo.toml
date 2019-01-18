@@ -14,7 +14,7 @@ native_support = ["chrono", "rayon", "js_server_connector", "mongodb_connector"]
 js_server_connector = ["chrono", "hyper-sync"]
 
 # Connection to MongoDB backenf for in-process native server
-mongodb_connector = ["chrono", "bson", "mongodb", "wither"]
+mongodb_connector = ["chrono", "mongodb", "wither"]
 
 # Build as a self-contained web app with GUI. Not compatible with native-only features.
 webapp = ["yew", "stdweb"]
@@ -31,9 +31,8 @@ rayon = { version = "^1.0", optional = true }
 chrono = { version = "^0.4", features = ["serde"], optional = true }
 structopt = { version = "^0.2", optional = true }
 hyper-sync = { git = "https://github.com/tobz1000/hyper-sync", optional = true }
-bson = { version = "0.10.0", optional = true } # version fixed to match mongodb, used by wither
-mongodb = { version = "^0.3", optional = true }
-wither = { version = "^0.5", optional = true }
+mongodb = { version = "*", optional = true }
+wither = { version = "*", optional = true }
 yew = { path = "/home/toby/sources/yew", optional = true }
 stdweb = { version = "*", optional = true }
 

@@ -1,5 +1,4 @@
 #![feature(vec_resize_default)]
-#![feature(iterator_try_fold)]
 #![feature(try_from)]
 
 #[macro_use] extern crate serde_derive;

@@ -1,4 +1,3 @@
-extern crate bson;
 extern crate chrono;
 extern crate serde;
 extern crate wither;
@@ -6,7 +5,7 @@ extern crate mongodb;
 
 use self::chrono::{DateTime, Utc};
 use self::mongodb::db::{Database, ThreadedDatabase};
-use self::bson::oid::ObjectId;
+use self::mongodb::oid::ObjectId;
 use self::wither::Model;
 use server::GameState;
 use server::native::{NativeServer, TurnInfo, Cell, CellAction};
