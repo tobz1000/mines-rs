@@ -65,7 +65,7 @@ def cargo(args):
 
 def cargo_web(args):
     check_install_cargo_web()
-    cmd = ["cargo", "web", "--feature"] + args
+    cmd = ["cargo", "web"] + args
     print(" ".join(cmd))
     subprocess.check_call(cmd)
 
@@ -80,6 +80,7 @@ def build_cli():
 def build_webapp():
     cargo_web([
         "start" if args.run else "build",
+        "--release",
         "--features=webapp",
         "--bin=mines-rs-webapp"
     ])
