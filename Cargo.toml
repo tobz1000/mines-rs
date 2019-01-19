@@ -2,6 +2,7 @@
 name = "mines-rs"
 version = "0.1.0"
 authors = ["Toby Dimmick <tobydimmick@protonmail.ch>"]
+edition = "2018"
 
 [features]
 # Command-line executable to play a batch of games
@@ -34,7 +35,7 @@ hyper-sync = { git = "https://github.com/tobz1000/hyper-sync", optional = true }
 mongodb = { version = "*", optional = true }
 wither = { version = "*", optional = true }
 yew = { path = "/home/toby/sources/yew", optional = true }
-stdweb = { version = "*", optional = true }
+stdweb = { version = "*", features = ["serde"], optional = true }
 
 [dev-dependencies]
 quickcheck = "^0.6"

@@ -1,18 +1,13 @@
-extern crate rand;
-#[cfg(feature = "chrono")] extern crate chrono;
-extern crate itertools;
-extern crate mersenne_twister;
-
 use std::collections::HashSet;
-use ::GameError;
-use self::rand::{Rng, SeedableRng};
-#[cfg(feature = "chrono")] use self::chrono::{DateTime, Utc};
-use self::itertools::Itertools;
-use self::mersenne_twister::MT19937;
+use rand::{Rng, SeedableRng};
+#[cfg(feature = "chrono")] use chrono::{DateTime, Utc};
+use itertools::Itertools;
+use mersenne_twister::MT19937;
 
-use coords::Coords;
-use server::{GameServer, GameState, GameSpec, CellInfo};
-use game_grid::GameGrid;
+use crate::GameError;
+use crate::coords::Coords;
+use crate::server::{GameServer, GameState, GameSpec, CellInfo};
+use crate::game_grid::GameGrid;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CellAction { NoAction, Flagged, Cleared }

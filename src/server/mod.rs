@@ -1,8 +1,8 @@
 #[cfg(feature = "js_server_connector")] pub mod js;
 pub mod native;
 
-use ::GameError;
-use coords::Coords;
+use crate::GameError;
+use crate::coords::Coords;
 
 #[derive(Debug)]
 pub struct GameSpec {

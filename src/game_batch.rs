@@ -1,16 +1,13 @@
-extern crate rand;
-extern crate mersenne_twister;
-extern crate itertools;
-#[cfg(feature = "rayon")] extern crate rayon;
-
 use std::iter::repeat;
-use self::rand::{Rng, SeedableRng};
-use self::mersenne_twister::MT19937;
-use self::itertools::Itertools;
-#[cfg(feature = "rayon")] use self::rayon::iter::{ParallelIterator, IntoParallelIterator};
-use ::GameError;
-use server::{GameServer, GameState, GameSpec};
-use client::Client;
+use rand::{Rng, SeedableRng};
+use mersenne_twister::MT19937;
+use itertools::{Itertools, iproduct};
+#[cfg(feature = "rayon")] use rayon::iter::{ParallelIterator, IntoParallelIterator};
+use serde_derive::{Deserialize, Serialize};
+
+use crate::GameError;
+use crate::server::{GameServer, GameState, GameSpec};
+use crate::client::Client;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameBatch<D, M> {
@@ -30,9 +27,17 @@ pub struct SpecResult<I> {
     pub info: Vec<I>
 }
 
-type EmptySpecResult = SpecResult<()>;
+/// `js_serializable` implementation for `SpecResult<()>`. Used by webapp, but must be defined in
+/// the same module as `SpecResult`.
+#[cfg(feature = "webapp")]
+mod empty_spec_result_js_impl {
+    use super::SpecResult;
+    use stdweb::{js_serializable, __js_serializable_serde_boilerplate, __js_serializable_boilerplate};
 
-#[cfg(feature = "webapp")] js_serializable!( EmptySpecResult );
+    type EmptySpecResult = SpecResult<()>;
+
+    js_serializable!( EmptySpecResult );
+}
 
 #[derive(Clone)]
 struct GridSpec {

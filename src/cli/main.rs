@@ -1,10 +1,6 @@
-#[macro_use] extern crate structopt;
-extern crate chrono;
-extern crate mines_rs;
-
 mod options;
 
-use self::chrono::Utc;
+use chrono::Utc;
 use mines_rs::{
     GameBatch,
     SpecResult,
@@ -12,8 +8,9 @@ use mines_rs::{
     NativeServer,
     mongodb_connector
 };
-use options::{RunBatchOptions, ServerType};
 use structopt::StructOpt;
+
+use crate::options::{RunBatchOptions, ServerType};
 
 fn main() {
     let RunBatchOptions {

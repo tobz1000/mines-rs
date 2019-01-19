@@ -1,9 +1,9 @@
-use ::GameError;
-use coords::Coords;
-use client::cell::{Cell, Action, SingleCellAction};
-use client::action_queue::ActionQueue;
-use server::{GameServer, GameState, CellInfo};
-use game_grid::GameGrid;
+use crate::GameError;
+use crate::coords::Coords;
+use crate::client::cell::{Cell, Action, SingleCellAction};
+use crate::client::action_queue::ActionQueue;
+use crate::server::{GameServer, GameState, CellInfo};
+use crate::game_grid::GameGrid;
 
 #[derive(Debug)]
 struct ServerActions {

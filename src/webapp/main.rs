@@ -1,13 +1,10 @@
 #![recursion_limit="128"]
 
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate yew;
-#[macro_use] extern crate stdweb;
-extern crate mines_rs;
-
 mod game_runner;
 
 use std::iter::once;
+use stdweb::{js, _js_impl};
+use yew::{html, html_impl};
 use yew::prelude::{
     Component,
     ComponentLink,
@@ -51,7 +48,7 @@ impl Component for GameViewer {
     type Message = GameViewerMsg;
     type Properties = ();
 
-    fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(_props: Self::Properties, mut link: ComponentLink<Self>) -> Self {
         let callback = link.send_back(|GameBatchResultMessage(results)| {
             GameViewerMsg::BatchResult(results)
         });

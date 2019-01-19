@@ -1,12 +1,11 @@
 use itertools::Itertools;
-
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::iter::repeat;
 use std::ops::{Index, IndexMut};
 
-use coords::Coords;
-use util::index_pair;
+use crate::coords::Coords;
+use crate::util::index_pair;
 
 pub struct GameGrid<C>(Vec<Option<C>>);
 

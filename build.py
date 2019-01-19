@@ -65,7 +65,7 @@ def cargo(args):
 
 def cargo_web(args):
     check_install_cargo_web()
-    cmd = ["cargo", "web"] + args + ["--target=wasm32-unknown-unknown"]
+    cmd = ["cargo", "web", "--feature"] + args
     print(" ".join(cmd))
     subprocess.check_call(cmd)
 

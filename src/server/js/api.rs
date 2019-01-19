@@ -1,5 +1,7 @@
 pub mod req {
-    use coords::Coords;
+    use serde_derive::{Deserialize, Serialize};
+
+    use crate::coords::Coords;
 
     pub trait JsServerRequest {
         const ACTION: &'static str;
@@ -42,10 +44,10 @@ pub mod req {
 }
 
 pub mod resp {
-    extern crate chrono;
+    use chrono::{DateTime, Utc};
+    use serde_derive::{Serialize, Deserialize};
 
-    use self::chrono::{DateTime, Utc};
-    use coords::Coords;
+    use crate::coords::Coords;
 
     #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
     #[serde(rename_all = "camelCase")]

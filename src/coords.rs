@@ -1,8 +1,6 @@
-extern crate serde;
-
 use std::fmt;
 use std::convert::{TryFrom, TryInto};
-use self::serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
 #[derive(Clone)]
 pub struct Coords<T = usize>(pub Vec<T>);
@@ -50,11 +48,9 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Coords<T> {
 
 #[cfg(test)]
 mod test {
-    extern crate quickcheck;
-
     use std::mem::size_of;
-    use self::quickcheck::TestResult;
-    use coords::Coords;
+    use quickcheck::TestResult;
+    use crate::coords::Coords;
 
     quickcheck! {
         fn test_coords(i: usize, dims: Vec<u8>) -> TestResult {

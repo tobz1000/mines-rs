@@ -1,3 +1,4 @@
+use serde_derive::{Serialize, Deserialize};
 use mines_rs::{GameBatch, SpecResult, NativeServer };
 use yew::agent::{
     Agent,
@@ -6,7 +7,7 @@ use yew::agent::{
     Transferable
 };
 
-mod AgentLinkType {
+mod agent_link_type {
     pub use yew::agent::{
         Job, // Runs on same thread
         Context, // Runs on same thread
@@ -30,7 +31,7 @@ impl Transferable for GameBatchMessage {}
 impl Transferable for GameBatchResultMessage {}
 
 impl Agent for GameBatchRunner {
-    type Reach = AgentLinkType::Job;
+    type Reach = agent_link_type::Job;
     type Message = ();
     type Input = GameBatchMessage;
     type Output = GameBatchResultMessage;

@@ -1,15 +1,13 @@
-extern crate chrono;
-extern crate serde;
-extern crate wither;
-extern crate mongodb;
+use chrono::{DateTime, Utc};
+use lazy_static::lazy_static;
+use mongodb::db::{Database, ThreadedDatabase};
+use mongodb::oid::ObjectId;
+use serde_derive::{Deserialize, Serialize};
+use wither::Model;
 
-use self::chrono::{DateTime, Utc};
-use self::mongodb::db::{Database, ThreadedDatabase};
-use self::mongodb::oid::ObjectId;
-use self::wither::Model;
-use server::GameState;
-use server::native::{NativeServer, TurnInfo, Cell, CellAction};
-use coords::Coords;
+use crate::server::GameState;
+use crate::server::native::{NativeServer, TurnInfo, Cell, CellAction};
+use crate::coords::Coords;
 
 lazy_static! {
     static ref DB_CONNECTION: Database = {

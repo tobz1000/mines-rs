@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::cmp::{max, min};
-use client::action_queue::ActionQueue;
+
+use crate::client::action_queue::ActionQueue;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Action {

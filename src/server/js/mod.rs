@@ -1,18 +1,15 @@
-extern crate hyper_sync;
-extern crate serde;
-extern crate serde_json;
-
 mod api;
 
 use std::str;
-use coords::Coords;
-use server::{GameServer, GameState, GameSpec, CellInfo as NativeCellInfo};
-use ::GameError;
-use self::api::req::{JsServerRequest, TurnRequest, NewGameRequest};
-use self::api::resp::{ServerResponse, CellState, CellInfo as JsCellInfo};
-use self::hyper_sync::Client;
-use self::hyper_sync::header::{ContentLength, ContentType};
-use self::serde::ser::Serialize;
+use api::req::{JsServerRequest, TurnRequest, NewGameRequest};
+use api::resp::{ServerResponse, CellState, CellInfo as JsCellInfo};
+use hyper_sync::Client;
+use hyper_sync::header::{ContentLength, ContentType};
+use serde::ser::Serialize;
+
+use crate::coords::Coords;
+use crate::server::{GameServer, GameState, GameSpec, CellInfo as NativeCellInfo};
+use crate::GameError;
 
 pub struct JsServerWrapper {
 	client_name: String,
