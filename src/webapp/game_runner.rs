@@ -1,19 +1,14 @@
-use serde_derive::{Serialize, Deserialize};
-use mines_rs::{GameBatch, SpecResult, NativeServer };
-use yew::agent::{
-    Agent,
-    AgentLink,
-    HandlerId,
-    Transferable
-};
+use mines_rs::{GameBatch, NativeServer, SpecResult};
+use serde_derive::{Deserialize, Serialize};
+use yew::agent::{Agent, AgentLink, HandlerId, Transferable};
 
 mod agent_link_type {
     pub use yew::agent::{
-        Job, // Runs on same thread
         Context, // Runs on same thread
-        Public, // Doesn't seem to run
+        Global,  // panics (unimplemented)
+        Job,     // Runs on same thread
         Private, // Doesn't seem to run
-        Global // panics (unimplemented)
+        Public,  // Doesn't seem to run
     };
 }
 
@@ -43,10 +38,10 @@ impl Agent for GameBatchRunner {
     fn update(&mut self, msg: Self::Message) {}
 
     fn handle(&mut self, batch: Self::Input, who: HandlerId) {
-        let results = batch.0.run(
-            |spec| NativeServer::new(spec, false),
-            |_game| ()
-        ).unwrap();
+        let results = batch
+            .0
+            .run(|spec| NativeServer::new(spec, false), |_game| ())
+            .unwrap();
 
         self.link.response(who, GameBatchResultMessage(results));
     }

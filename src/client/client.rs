@@ -1,19 +1,19 @@
-use crate::GameError;
-use crate::coords::Coords;
-use crate::client::cell::{Cell, Action, SingleCellAction};
 use crate::client::action_queue::ActionQueue;
-use crate::server::{GameServer, GameState, CellInfo};
+use crate::client::cell::{Action, Cell, SingleCellAction};
+use crate::coords::Coords;
 use crate::game_grid::GameGrid;
+use crate::server::{CellInfo, GameServer, GameState};
+use crate::GameError;
 
 #[derive(Debug)]
 struct ServerActions {
     to_clear: Vec<Coords>,
-    to_flag: Vec<Coords>
+    to_flag: Vec<Coords>,
 }
 
 pub struct Client<'a, G: GameServer + 'a> {
     grid: GameGrid<Cell>,
-    server: &'a mut G
+    server: &'a mut G,
 }
 
 impl<'a, G: GameServer> Client<'a, G> {
@@ -24,15 +24,15 @@ impl<'a, G: GameServer> Client<'a, G> {
     }
 
     pub fn play(&mut self) -> Result<(), GameError> {
-        let mut to_clear = vec![Coords(
-            self.server.dims().iter().map(|&d| d / 2).collect()
-        )];
+        let mut to_clear = vec![Coords(self.server.dims().iter().map(|&d| d / 2).collect())];
         let mut to_flag = vec![];
 
         while !(to_clear.is_empty() && to_flag.is_empty()) {
             let clear_actual = self.server.turn(to_clear, to_flag, vec![])?;
 
-            if self.server.game_state() != GameState::Ongoing { break; }
+            if self.server.game_state() != GameState::Ongoing {
+                break;
+            }
 
             let next_actions = self.next_turn(&clear_actual);
 
@@ -50,7 +50,8 @@ impl<'a, G: GameServer> Client<'a, G> {
             ref coords,
             surrounding,
             mine,
-        } in clear_actual.iter() {
+        } in clear_actual.iter()
+        {
             let index = coords.to_index(&self.server.dims());
             let action_type = if mine {
                 SingleCellAction::Flag
@@ -74,22 +75,17 @@ impl<'a, G: GameServer> Client<'a, G> {
                     if complete {
                         *cell = Cell::Complete;
                     }
-                },
-                Action::Pair { index1, index2, action_type } => {
-                    match self.grid.cell_pair(index1, index2) {
-                        (
-                            &mut Cell::Ongoing(ref mut cell1),
-                            &mut Cell::Ongoing(ref mut cell2)
-                        ) => {
-                            cell1.apply_pair_action(
-                                cell2,
-                                &mut actions,
-                                action_type
-                            );
-                        },
-                        _ => ()
-                    }
                 }
+                Action::Pair {
+                    index1,
+                    index2,
+                    action_type,
+                } => match self.grid.cell_pair(index1, index2) {
+                    (&mut Cell::Ongoing(ref mut cell1), &mut Cell::Ongoing(ref mut cell2)) => {
+                        cell1.apply_pair_action(cell2, &mut actions, action_type);
+                    }
+                    _ => (),
+                },
             }
         }
 
@@ -98,10 +94,12 @@ impl<'a, G: GameServer> Client<'a, G> {
         }
 
         let next_actions = ServerActions {
-            to_clear: actions.get_to_clear()
+            to_clear: actions
+                .get_to_clear()
                 .map(|&i| Coords::from_index(i, &self.server.dims()))
                 .collect(),
-            to_flag: actions.get_to_flag()
+            to_flag: actions
+                .get_to_flag()
                 .map(|&i| Coords::from_index(i, &self.server.dims()))
                 .collect(),
         };
@@ -110,7 +108,9 @@ impl<'a, G: GameServer> Client<'a, G> {
     }
 
     fn guess_index(&self) -> usize {
-        let (i, _cell) = self.grid.iter()
+        let (i, _cell) = self
+            .grid
+            .iter()
             .enumerate()
             .find(|&(_i, cell)| !cell.is_marked())
             .expect("Found no uncleared, unflagged cell to guess");

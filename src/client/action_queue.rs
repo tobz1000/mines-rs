@@ -1,11 +1,11 @@
-use std::collections::{VecDeque, HashSet};
+use std::collections::{HashSet, VecDeque};
 
 use crate::client::cell::Action;
 
 pub struct ActionQueue {
     actions: VecDeque<Action>,
     server_to_clear: HashSet<usize>,
-    server_to_flag: HashSet<usize>
+    server_to_flag: HashSet<usize>,
 }
 
 impl ActionQueue {
@@ -33,11 +33,11 @@ impl ActionQueue {
         self.server_to_flag.insert(index);
     }
 
-    pub fn get_to_clear(&self) -> impl Iterator<Item=&usize> {
+    pub fn get_to_clear(&self) -> impl Iterator<Item = &usize> {
         self.server_to_clear.iter()
     }
 
-    pub fn get_to_flag(&self) -> impl Iterator<Item=&usize> {
+    pub fn get_to_flag(&self) -> impl Iterator<Item = &usize> {
         self.server_to_flag.iter()
     }
 }

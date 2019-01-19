@@ -1,32 +1,22 @@
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 
 mod game_runner;
 
+use game_runner::{GameBatchMessage, GameBatchResultMessage, GameBatchRunner};
+use mines_rs::{GameBatch, NativeServer, SpecResult};
 use std::iter::once;
-use stdweb::{js, _js_impl};
+use stdweb::{_js_impl, js};
+use yew::agent::{Bridge, Bridged};
+use yew::prelude::{App, Component, ComponentLink, Html, Renderable, ShouldRender};
 use yew::{html, html_impl};
-use yew::prelude::{
-    Component,
-    ComponentLink,
-    Html,
-    Renderable,
-    ShouldRender,
-    App
-};
-use yew::agent::{
-    Bridge,
-    Bridged
-};
-use mines_rs::{NativeServer, GameBatch, SpecResult};
-use game_runner::{GameBatchRunner, GameBatchMessage, GameBatchResultMessage};
 
 enum GameViewerMsg {
     DoBatch,
-    BatchResult(Vec<SpecResult<()>>)
+    BatchResult(Vec<SpecResult<()>>),
 }
 
 struct GameViewer {
-    game_runner: Box<dyn Bridge<GameBatchRunner>>
+    game_runner: Box<dyn Bridge<GameBatchRunner>>,
 }
 
 impl GameViewer {
@@ -37,8 +27,9 @@ impl GameViewer {
             dims_range: vec![once(20), once(20)],
             mines_range: (10..=50).step_by(5),
             autoclear: true,
-            metaseed: 133337
-        }.into_serializable();
+            metaseed: 133337,
+        }
+        .into_serializable();
 
         self.game_runner.send(GameBatchMessage(batch));
     }
@@ -49,9 +40,8 @@ impl Component for GameViewer {
     type Properties = ();
 
     fn create(_props: Self::Properties, mut link: ComponentLink<Self>) -> Self {
-        let callback = link.send_back(|GameBatchResultMessage(results)| {
-            GameViewerMsg::BatchResult(results)
-        });
+        let callback =
+            link.send_back(|GameBatchResultMessage(results)| GameViewerMsg::BatchResult(results));
         let game_runner = GameBatchRunner::bridge(callback);
 
         Self { game_runner }
@@ -59,7 +49,9 @@ impl Component for GameViewer {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            GameViewerMsg::DoBatch => { self.do_batch(); },
+            GameViewerMsg::DoBatch => {
+                self.do_batch();
+            }
             GameViewerMsg::BatchResult(results) => {
                 js! { console.table(@{results}); }
             }
@@ -92,15 +84,15 @@ fn run_sample() {
         dims_range: vec![once(20), once(20)],
         mines_range: (10..=50).step_by(5),
         autoclear: true,
-        metaseed: 133337
-    }.into_serializable();
+        metaseed: 133337,
+    }
+    .into_serializable();
 
     let start = js! { return performance.now(); };
 
-    let results = batch.run(
-        |spec| NativeServer::new(spec, false),
-        |_game| ()
-    ).unwrap();
+    let results = batch
+        .run(|spec| NativeServer::new(spec, false), |_game| ())
+        .unwrap();
 
     let end = js! { return performance.now(); };
     let game_count = (results.len() * count_per_spec) as i32;

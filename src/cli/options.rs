@@ -1,5 +1,5 @@
-use std::iter::StepBy;
 use std::error::Error;
+use std::iter::StepBy;
 use std::ops::RangeInclusive;
 use structopt::StructOpt;
 
@@ -11,29 +11,35 @@ fn parse_range(s: &str) -> Result<RangeOpt, Box<dyn Error>> {
     let lower = sub_args.next().unwrap().parse()?;
     let upper = match sub_args.next() {
         Some(upper) => upper.parse()?,
-        None => { return Ok((lower..=lower).step_by(1)); }
+        None => {
+            return Ok((lower..=lower).step_by(1));
+        }
     };
     let step = match sub_args.next() {
         Some(step) => step.parse()?,
-        None => { return Ok((lower..=upper).step_by(1)); }
+        None => {
+            return Ok((lower..=upper).step_by(1));
+        }
     };
 
     Ok((lower..=upper).step_by(step))
 }
 
 fn parse_mines_range(s: &str) -> Result<RangeOpt, &str> {
-    parse_range(s).or(Err("Mines range should be of the form start[..end][..step], e.g. `10` `10..50..5`"))
+    parse_range(s).or(Err(
+        "Mines range should be of the form start[..end][..step], e.g. `10` `10..50..5`",
+    ))
 }
 
 fn parse_dims_range(s: &str) -> Result<RangeOpt, &str> {
     parse_range(s).or(Err(
-        "Dims should be in the form start[..end][..step][,...], e.g. `15` `2..5,10..30..10`"
+        "Dims should be in the form start[..end][..step][,...], e.g. `15` `2..5,10..30..10`",
     ))
 }
 
 fn parse_seed(s: &str) -> Result<u32, &str> {
     s.parse().or(Err(
-        "Seed should be positive number less than U32MAX, e.g. `56023`"
+        "Seed should be positive number less than U32MAX, e.g. `56023`",
     ))
 }
 
@@ -41,13 +47,13 @@ fn parse_server_type(s: &str) -> Result<ServerType, &str> {
     match s.to_lowercase().as_str() {
         "js" => Ok(ServerType::Js),
         "native" => Ok(ServerType::Native),
-        _ => Err("Unknown server type")
+        _ => Err("Unknown server type"),
     }
 }
 
 #[derive(StructOpt, Debug)]
 pub struct RunBatchOptions {
-    #[structopt(short = "c", default_value ="100")]
+    #[structopt(short = "c", default_value = "100")]
     pub count_per_spec: usize,
 
     #[structopt(
@@ -88,4 +94,7 @@ pub struct RunBatchOptions {
 }
 
 #[derive(Debug)]
-pub enum ServerType { Js, Native }
+pub enum ServerType {
+    Js,
+    Native,
+}

@@ -35,7 +35,7 @@ pub mod req {
 
     #[derive(Serialize, Deserialize)]
     pub struct StatusRequest<'a> {
-        pub id: &'a str
+        pub id: &'a str,
     }
 
     impl<'a> JsServerRequest for StatusRequest<'a> {
@@ -45,20 +45,23 @@ pub mod req {
 
 pub mod resp {
     use chrono::{DateTime, Utc};
-    use serde_derive::{Serialize, Deserialize};
+    use serde_derive::{Deserialize, Serialize};
 
     use crate::coords::Coords;
 
     #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
     #[serde(rename_all = "camelCase")]
-    pub enum CellState { Cleared, Mine }
+    pub enum CellState {
+        Cleared,
+        Mine,
+    }
 
     #[derive(Debug, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CellInfo {
         pub surrounding: usize,
         pub state: CellState,
-        pub coords: Coords
+        pub coords: Coords,
     }
 
     #[derive(Debug, Serialize, Deserialize)]

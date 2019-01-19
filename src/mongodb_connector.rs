@@ -5,9 +5,9 @@ use mongodb::oid::ObjectId;
 use serde_derive::{Deserialize, Serialize};
 use wither::Model;
 
-use crate::server::GameState;
-use crate::server::native::{NativeServer, TurnInfo, Cell, CellAction};
 use crate::coords::Coords;
+use crate::server::native::{Cell, CellAction, NativeServer, TurnInfo};
+use crate::server::GameState;
 
 lazy_static! {
     static ref DB_CONNECTION: Database = {
@@ -18,14 +18,18 @@ lazy_static! {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "camelCase")]
-enum CellState { Empty, Cleared, Mine }
+enum CellState {
+    Empty,
+    Cleared,
+    Mine,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct CellInfo {
     surrounding: i32,
     state: CellState,
-    coords: Coords<i32>
+    coords: Coords<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -84,20 +88,23 @@ impl Game {
             ..
         } = server;
 
-        let cell_array = grid.iter().map(|&Cell { mine, action, .. }| {
-            match (mine, action) {
+        let cell_array = grid
+            .iter()
+            .map(|&Cell { mine, action, .. }| match (mine, action) {
                 (true, _) => CellState::Mine,
                 (false, CellAction::Cleared) => CellState::Cleared,
-                (false, _) => CellState::Empty
-            }
-        }).collect();
+                (false, _) => CellState::Empty,
+            })
+            .collect();
 
-        let flag_array = grid.iter()
+        let flag_array = grid
+            .iter()
             .map(|cell| cell.action == CellAction::Flagged)
             .collect();
 
         let turns = native_turns.as_ref().map(|native_turns| {
-            native_turns.iter()
+            native_turns
+                .iter()
                 .map(|turn| Turn::from_native(turn, server))
                 .collect()
         });
@@ -114,7 +121,7 @@ impl Game {
             turns,
             clients: vec!["RustoBusto".to_owned()],
             cell_array,
-            flag_array
+            flag_array,
         }
     }
 }
@@ -122,12 +129,15 @@ impl Game {
 impl Turn {
     fn from_native(turn_info: &TurnInfo, server: &NativeServer) -> Turn {
         let to_coords_vec = |indices: &[usize]| -> Vec<Coords<i32>> {
-            indices.iter()
+            indices
+                .iter()
                 .map(|&i| Coords::from_index(i, &server.dims))
                 .collect()
         };
 
-        let clear_actual = turn_info.clear_actual.iter()
+        let clear_actual = turn_info
+            .clear_actual
+            .iter()
             .map(|&i| {
                 let &Cell {
                     mine,
@@ -144,7 +154,7 @@ impl Turn {
                 CellInfo {
                     surrounding: surr_mine_count as i32,
                     state,
-                    coords: Coords::from_index(i, &server.dims)
+                    coords: Coords::from_index(i, &server.dims),
                 }
             })
             .collect();
@@ -157,7 +167,7 @@ impl Turn {
             unflagged: to_coords_vec(&turn_info.unflagged),
             game_over: turn_info.game_state != GameState::Ongoing,
             win: turn_info.game_state == GameState::Win,
-            cells_rem: turn_info.cells_rem as i32
+            cells_rem: turn_info.cells_rem as i32,
         }
     }
 }

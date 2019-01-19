@@ -1,14 +1,15 @@
-use std::fmt;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::{TryFrom, TryInto};
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use std::fmt;
 
 #[derive(Clone)]
 pub struct Coords<T = usize>(pub Vec<T>);
 
 impl<T> Coords<T>
-    where T: Default + Copy + TryFrom<usize> + TryInto<usize>,
-          <T as TryFrom<usize>>::Error: fmt::Debug,
-          <T as TryInto<usize>>::Error: fmt::Debug,
+where
+    T: Default + Copy + TryFrom<usize> + TryInto<usize>,
+    <T as TryFrom<usize>>::Error: fmt::Debug,
+    <T as TryInto<usize>>::Error: fmt::Debug,
 {
     pub fn from_index(mut index: usize, dims: &[usize]) -> Self {
         let mut coords = vec![Default::default(); dims.len()];
@@ -22,8 +23,12 @@ impl<T> Coords<T>
     }
 
     pub fn to_index(&self, dims: &[usize]) -> usize {
-        self.0.iter().zip(dims.iter())
-            .fold(0, |acc, (&coord, &dim)| (acc * dim) + coord.try_into().unwrap())
+        self.0
+            .iter()
+            .zip(dims.iter())
+            .fold(0, |acc, (&coord, &dim)| {
+                (acc * dim) + coord.try_into().unwrap()
+            })
     }
 }
 
@@ -48,8 +53,9 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Coords<T> {
 
 #[cfg(test)]
 mod test {
-    use std::mem::size_of;
     use quickcheck::TestResult;
+    use std::mem::size_of;
+
     use crate::coords::Coords;
 
     quickcheck! {

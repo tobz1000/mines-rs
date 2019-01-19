@@ -1,12 +1,19 @@
-use std::collections::HashSet;
 use std::cmp::{max, min};
+use std::collections::HashSet;
 
 use crate::client::action_queue::ActionQueue;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Action {
-    Single { index: usize, action_type: SingleCellAction },
-    Pair { index1: usize, index2: usize, action_type: CellPairAction }
+    Single {
+        index: usize,
+        action_type: SingleCellAction,
+    },
+    Pair {
+        index1: usize,
+        index2: usize,
+        action_type: CellPairAction,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -20,7 +27,7 @@ pub enum SingleCellAction {
 
 #[derive(Clone, Copy, Debug)]
 pub enum CellPairAction {
-    CompareSurr
+    CompareSurr,
 }
 
 #[derive(Clone, Debug)]
@@ -52,8 +59,11 @@ impl Cell {
     // to-be-cleared cells.
     pub fn is_marked(&self) -> bool {
         match self {
-            &Cell::Ongoing(OngoingCell { total_surr_mines: None, .. }) => false,
-            _ => true
+            &Cell::Ongoing(OngoingCell {
+                total_surr_mines: None,
+                ..
+            }) => false,
+            _ => true,
         }
     }
 }
@@ -64,18 +74,14 @@ impl OngoingCell {
     }
 
     // Returns true if cell is Complete as a result of action.
-    pub fn apply_action(
-        &mut self,
-        actions: &mut ActionQueue,
-        action: SingleCellAction
-    ) -> bool {
+    pub fn apply_action(&mut self, actions: &mut ActionQueue, action: SingleCellAction) -> bool {
         use self::SingleCellAction::*;
 
         match action {
             MarkSurrEmpty { surr } => {
                 self.mark_surr_empty(surr);
                 self.try_complete(actions)
-            },
+            }
             MarkSurrMine { surr } => {
                 self.mark_surr_mine(surr);
                 self.try_complete(actions)
@@ -87,7 +93,7 @@ impl OngoingCell {
             ServerClear => {
                 self.server_clear(actions);
                 self.try_complete(actions)
-            },
+            }
             Flag => {
                 self.flag(actions);
                 true
@@ -99,12 +105,14 @@ impl OngoingCell {
         &mut self,
         other: &mut OngoingCell,
         actions: &mut ActionQueue,
-        action: CellPairAction
+        action: CellPairAction,
     ) {
         use self::CellPairAction::*;
 
         match action {
-            CompareSurr => { self.compare_surr(other, actions); }
+            CompareSurr => {
+                self.compare_surr(other, actions);
+            }
         }
     }
 
@@ -123,9 +131,7 @@ impl OngoingCell {
         for &surr in self.total_surr.iter() {
             actions.push(Action::Single {
                 index: surr,
-                action_type: SingleCellAction::MarkSurrEmpty {
-                    surr: self.index
-                }
+                action_type: SingleCellAction::MarkSurrEmpty { surr: self.index },
             })
         }
     }
@@ -140,9 +146,7 @@ impl OngoingCell {
         for &surr in self.total_surr.iter() {
             actions.push(Action::Single {
                 index: surr,
-                action_type: SingleCellAction::MarkSurrEmpty {
-                    surr: self.index
-                }
+                action_type: SingleCellAction::MarkSurrEmpty { surr: self.index },
             })
         }
     }
@@ -153,20 +157,14 @@ impl OngoingCell {
         for &surr in self.total_surr.iter() {
             actions.push(Action::Single {
                 index: surr,
-                action_type: SingleCellAction::MarkSurrMine {
-                    surr: self.index
-                }
+                action_type: SingleCellAction::MarkSurrMine { surr: self.index },
             })
         }
     }
 
     fn try_complete(&mut self, actions: &mut ActionQueue) -> bool {
         if let Some(unknown_surr_mines) = self.unknown_surr_mines() {
-            if try_mark_cell_set(
-                unknown_surr_mines,
-                self.unknown_surr.iter(),
-                actions
-            ) {
+            if try_mark_cell_set(unknown_surr_mines, self.unknown_surr.iter(), actions) {
                 return true;
             }
         }
@@ -175,33 +173,24 @@ impl OngoingCell {
             actions.push(Action::Pair {
                 index1: self.index,
                 index2: surr,
-                action_type: CellPairAction::CompareSurr
+                action_type: CellPairAction::CompareSurr,
             });
         }
 
         return false;
     }
 
-    fn compare_surr(
-        &mut self,
-        other: &mut OngoingCell,
-        actions: &mut ActionQueue
-    ) {
-        if let (
-            Some(self_unknown_mines),
-            Some(other_unknown_mines)
-        ) = (self.unknown_surr_mines(), other.unknown_surr_mines()) {
+    fn compare_surr(&mut self, other: &mut OngoingCell, actions: &mut ActionQueue) {
+        if let (Some(self_unknown_mines), Some(other_unknown_mines)) =
+            (self.unknown_surr_mines(), other.unknown_surr_mines())
+        {
             let self_excl = || self.unknown_surr.difference(&other.unknown_surr);
             let other_excl = || other.unknown_surr.difference(&self.unknown_surr);
             let common = || self.unknown_surr.intersection(&other.unknown_surr);
 
-            if let Some((
-                self_count,
-                mid_count,
-                other_count
-            )) = solve_linear_constraints(
+            if let Some((self_count, mid_count, other_count)) = solve_linear_constraints(
                 (self_excl().count(), common().count(), other_excl().count()),
-                (self_unknown_mines, other_unknown_mines)
+                (self_unknown_mines, other_unknown_mines),
             ) {
                 try_mark_cell_set(self_count, self_excl(), actions);
                 try_mark_cell_set(mid_count, common(), actions);
@@ -211,15 +200,17 @@ impl OngoingCell {
     }
 }
 
-fn try_mark_cell_set<'a, I: Iterator<Item=&'a usize> + Clone>(
+fn try_mark_cell_set<'a, I: Iterator<Item = &'a usize> + Clone>(
     mine_count: usize,
     set_iter: I,
-    actions: &mut ActionQueue
+    actions: &mut ActionQueue,
 ) -> bool {
     let action_type = match mine_count {
         0 => SingleCellAction::ServerClear,
         c if c == set_iter.clone().count() => SingleCellAction::Flag,
-        _ => { return false; }
+        _ => {
+            return false;
+        }
     };
 
     for &index in set_iter {
@@ -231,7 +222,7 @@ fn try_mark_cell_set<'a, I: Iterator<Item=&'a usize> + Clone>(
 
 fn solve_linear_constraints(
     (x_max, y_max, z_max): (usize, usize, usize),
-    (x_add_y, y_add_z): (usize, usize)
+    (x_add_y, y_add_z): (usize, usize),
 ) -> Option<(usize, usize, usize)> {
     let x_max = min(x_max, x_add_y);
     let y_max = min(min(y_max, x_add_y), y_add_z);
@@ -247,19 +238,19 @@ fn solve_linear_constraints(
             let y = x_add_y - x;
             let z = y_add_z - y;
             Some((x, y, z))
-        },
+        }
         (_, 0, _) => {
             let y = y_max;
             let x = x_add_y - y;
             let z = y_add_z - y;
             Some((x, y, z))
-        },
+        }
         (_, _, 0) => {
             let z = z_max;
             let y = y_add_z - z;
             let x = x_add_y - y;
             Some((x, y, z))
-        },
-        _ => None
+        }
+        _ => None,
     }
 }

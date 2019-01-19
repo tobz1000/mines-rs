@@ -1,8 +1,9 @@
-#[cfg(feature = "js_server_connector")] pub mod js;
+#[cfg(feature = "js_server_connector")]
+pub mod js;
 pub mod native;
 
-use crate::GameError;
 use crate::coords::Coords;
+use crate::GameError;
 
 #[derive(Debug)]
 pub struct GameSpec {
@@ -13,29 +14,33 @@ pub struct GameSpec {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum GameState { Ongoing, Win, Lose }
+pub enum GameState {
+    Ongoing,
+    Win,
+    Lose,
+}
 
 // Interface for game client to interact with a single game-presenting server.
 pub trait GameServer: Sized {
-	fn turn(
-	&mut self,
-		clear: Vec<Coords>,
-		flag: Vec<Coords>,
-		unflag: Vec<Coords>,
-	) -> Result<Vec<CellInfo>, GameError>;
+    fn turn(
+        &mut self,
+        clear: Vec<Coords>,
+        flag: Vec<Coords>,
+        unflag: Vec<Coords>,
+    ) -> Result<Vec<CellInfo>, GameError>;
 
-	fn dims(&self) -> &[usize];
+    fn dims(&self) -> &[usize];
 
-	fn mines(&self) -> usize;
+    fn mines(&self) -> usize;
 
-	fn game_state(&self) -> GameState;
+    fn game_state(&self) -> GameState;
 
-	fn cells_rem(&self) -> usize;
+    fn cells_rem(&self) -> usize;
 }
 
 #[derive(Debug)]
 pub struct CellInfo {
-	pub coords: Coords,
-	pub mine: bool,
-	pub surrounding: usize,
+    pub coords: Coords,
+    pub mine: bool,
+    pub surrounding: usize,
 }

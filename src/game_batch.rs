@@ -1,13 +1,14 @@
-use std::iter::repeat;
-use rand::{Rng, SeedableRng};
+use itertools::{iproduct, Itertools};
 use mersenne_twister::MT19937;
-use itertools::{Itertools, iproduct};
-#[cfg(feature = "rayon")] use rayon::iter::{ParallelIterator, IntoParallelIterator};
+use rand::{Rng, SeedableRng};
+#[cfg(feature = "rayon")]
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde_derive::{Deserialize, Serialize};
+use std::iter::repeat;
 
-use crate::GameError;
-use crate::server::{GameServer, GameState, GameSpec};
 use crate::client::Client;
+use crate::server::{GameServer, GameSpec, GameState};
+use crate::GameError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameBatch<D, M> {
@@ -24,7 +25,7 @@ pub struct SpecResult<I> {
     pub mines: usize,
     pub played: usize,
     pub wins: usize,
-    pub info: Vec<I>
+    pub info: Vec<I>,
 }
 
 /// `js_serializable` implementation for `SpecResult<()>`. Used by webapp, but must be defined in
@@ -32,54 +33,73 @@ pub struct SpecResult<I> {
 #[cfg(feature = "webapp")]
 mod empty_spec_result_js_impl {
     use super::SpecResult;
-    use stdweb::{js_serializable, __js_serializable_serde_boilerplate, __js_serializable_boilerplate};
+    use stdweb::{
+        __js_serializable_boilerplate, __js_serializable_serde_boilerplate, js_serializable,
+    };
 
     type EmptySpecResult = SpecResult<()>;
 
-    js_serializable!( EmptySpecResult );
+    js_serializable!(EmptySpecResult);
 }
 
 #[derive(Clone)]
 struct GridSpec {
     spec_index: usize,
     dims: Vec<usize>,
-    mines: usize
+    mines: usize,
 }
 
 struct GameResult<I> {
     spec_index: usize,
     win: bool,
-    info: I
+    info: I,
 }
 
-struct GameSpecs<G: Iterator<Item=GridSpec>, R: Rng> {
+struct GameSpecs<G: Iterator<Item = GridSpec>, R: Rng> {
     grid_specs: G,
     autoclear: bool,
     rng: R,
 }
 
-impl<G: Iterator<Item=GridSpec>, R: Rng> Iterator for GameSpecs<G, R> {
+impl<G: Iterator<Item = GridSpec>, R: Rng> Iterator for GameSpecs<G, R> {
     type Item = (usize, GameSpec);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let GameSpecs { grid_specs, autoclear, rng } = self;
-        let GridSpec { spec_index, dims, mines } = grid_specs.next()?;
+        let GameSpecs {
+            grid_specs,
+            autoclear,
+            rng,
+        } = self;
+        let GridSpec {
+            spec_index,
+            dims,
+            mines,
+        } = grid_specs.next()?;
         let seed = rng.next_u32();
 
-        Some((spec_index, GameSpec { dims, mines, seed, autoclear: *autoclear }))
+        Some((
+            spec_index,
+            GameSpec {
+                dims,
+                mines,
+                seed,
+                autoclear: *autoclear,
+            },
+        ))
     }
 }
 
 impl<D, M> GameBatch<D, M>
-    where D: IntoIterator<Item=usize>,
-          <D as IntoIterator>::IntoIter: Clone,
-          M: IntoIterator<Item=usize>,
-          <M as IntoIterator>::IntoIter: Clone
+where
+    D: IntoIterator<Item = usize>,
+    <D as IntoIterator>::IntoIter: Clone,
+    M: IntoIterator<Item = usize>,
+    <M as IntoIterator>::IntoIter: Clone,
 {
     pub fn run<G: GameServer, I: Send>(
         self,
         new_game: impl Fn(GameSpec) -> Result<G, GameError> + Sync,
-        use_game_result: impl Fn(G) -> I + Sync
+        use_game_result: impl Fn(G) -> I + Sync,
     ) -> Result<Vec<SpecResult<I>>, GameError> {
         let mut specs = Vec::new();
         let mut spec_results = Vec::new();
@@ -95,7 +115,7 @@ impl<D, M> GameBatch<D, M>
                     mines: spec.mines,
                     played: 0,
                     wins: 0,
-                    info: Vec::new()
+                    info: Vec::new(),
                 })
             }
 
@@ -120,12 +140,20 @@ impl<D, M> GameBatch<D, M>
                 let win = game.game_state() == GameState::Win;
                 let info = use_game_result(game);
 
-                Ok(GameResult { spec_index, win, info })
+                Ok(GameResult {
+                    spec_index,
+                    win,
+                    info,
+                })
             })
             .collect();
 
         for result in results {
-            let GameResult { spec_index, win, info } = result?;
+            let GameResult {
+                spec_index,
+                win,
+                info,
+            } = result?;
             let spec_result = &mut spec_results[spec_index];
 
             spec_result.played += 1;
@@ -140,7 +168,7 @@ impl<D, M> GameBatch<D, M>
         Ok(spec_results)
     }
 
-    fn game_specs(self) -> GameSpecs<impl Iterator<Item=GridSpec>, MT19937> {
+    fn game_specs(self) -> GameSpecs<impl Iterator<Item = GridSpec>, MT19937> {
         let GameBatch {
             count_per_spec,
             dims_range,
@@ -158,13 +186,21 @@ impl<D, M> GameBatch<D, M>
             })
             .enumerate()
             .flat_map(move |(spec_index, (dims, mines))| {
-                repeat(GridSpec { spec_index, dims, mines })
-                    .take(count_per_spec)
+                repeat(GridSpec {
+                    spec_index,
+                    dims,
+                    mines,
+                })
+                .take(count_per_spec)
             });
 
         let rng: MT19937 = SeedableRng::from_seed(metaseed);
 
-        GameSpecs { grid_specs, autoclear, rng }
+        GameSpecs {
+            grid_specs,
+            autoclear,
+            rng,
+        }
     }
 
     pub fn into_serializable(self) -> GameBatch<Vec<usize>, Vec<usize>> {
@@ -173,9 +209,10 @@ impl<D, M> GameBatch<D, M>
             dims_range,
             mines_range,
             autoclear,
-            metaseed
+            metaseed,
         } = self;
-        let dims_range = dims_range.into_iter()
+        let dims_range = dims_range
+            .into_iter()
             .map(|i| i.into_iter().collect())
             .collect();
         let mines_range = mines_range.into_iter().collect();
@@ -185,7 +222,7 @@ impl<D, M> GameBatch<D, M>
             dims_range,
             mines_range,
             autoclear,
-            metaseed
+            metaseed,
         }
     }
 }
